@@ -211,6 +211,24 @@ earns its place — learned in week one, with a bootable image in hand either wa
 
 ---
 
+## Build status (2026-10-16)
+
+v0.1 **builds**: a genuine arm64 `.img.xz` was produced by pi-gen under qemu
+emulation in a Docker container, with all AETHER packages present and zero armhf
+packages. Boot on real Pi 4 hardware is still unverified.
+
+**Decision (supersedes the base-OS choice): Debian trixie, not bookworm.** pi-gen's
+`arm64` branch targets trixie; its `bookworm` branch is 32-bit armhf only, so there
+is no clean bookworm-arm64 path. Trixie (Debian 13) is current and also carries
+`swappy` + `fonts-jetbrains-mono`. The build host must match (`debian:trixie`).
+
+Local Windows build notes (all handled in `build/build.sh` / the container flow):
+pi-gen needs LF line endings (git `autocrlf` breaks it), `qemu-user-static` +
+binfmt registration for arm64 emulation, and `debian-archive-keyring`. The GitHub
+Actions path on a native arm64 runner avoids the qemu/emulation steps entirely.
+
+---
+
 ## Engineering Review (plan-eng-review, 2026-10-16)
 
 Target: this design doc. Greenfield plan — findings are architecture,

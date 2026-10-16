@@ -1,7 +1,9 @@
 # pi-gen config for AETHER OS v0.1 base image.
-# [STATUS: UNTESTED] — authored on Windows; build runs on Linux/WSL2 (see build.sh).
+# Release is trixie (Debian 13): pi-gen's arm64 branch targets trixie, and the
+# older 'bookworm' branch is 32-bit armhf only. Trixie also carries swappy and
+# fonts-jetbrains-mono. Build host must match (debian:trixie). See build.sh.
 IMG_NAME=aether-os
-RELEASE=bookworm
+RELEASE=trixie
 ARCH=arm64
 
 # Base = Raspberry Pi OS Lite 64-bit (stage0..stage2), then our overlay.

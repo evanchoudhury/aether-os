@@ -1,7 +1,8 @@
 #!/bin/bash
-# AETHER report capture: screenshot (region or full) -> annotate in swappy ->
-# save to ~/AETHER/findings/ and append an entry to the findings log.
-# Bound to Print by labwc. [STATUS: UNTESTED]
+# AETHER report capture: screenshot (region or full) -> save to
+# ~/AETHER/findings/ and append an entry to the findings log. Bound to Print by
+# labwc. Annotation is deferred: swappy isn't in Debian bookworm (it's in
+# trixie); add it + a swappy pipe when the base moves to trixie. [STATUS: UNTESTED]
 set -euo pipefail
 
 dir="${HOME}/AETHER/findings"
@@ -12,12 +13,12 @@ img="$dir/$ts.png"
 # slurp lets the user pick a region; empty selection (Esc) -> full screen.
 region="$(slurp 2>/dev/null || true)"
 if [ -n "$region" ]; then
-	grim -g "$region" - | swappy -f - -o "$img"
+	grim -g "$region" "$img"
 else
-	grim - | swappy -f - -o "$img"
+	grim "$img"
 fi
 
-# swappy may exit without saving (user cancelled) -> no file, no log entry.
+# slurp cancelled with no fallback, or grim failed -> no file, no log entry.
 [ -s "$img" ] || { echo "capture cancelled"; exit 0; }
 
 log="$dir/findings.md"

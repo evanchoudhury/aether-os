@@ -9,13 +9,20 @@ Open source. Design and plan: [docs/designs/aether-os.md](docs/designs/aether-os
 
 ## Status
 
-**v0.1 — bootable base (in progress).** This produces a flashable Raspberry Pi OS
-Lite 64-bit image that boots into a bare [labwc](https://labwc.github.io/) Wayland
-session with a bar (waybar) and terminal (foot). Theming, the design system, and
-Lab Mode come next (see the design doc's task list).
+**v0.1 — image builds.** Produces a flashable, 64-bit **arm64** Raspberry Pi OS
+image (Debian **trixie** base) with the full v0.1 slice baked in: labwc + waybar +
+foot desktop, the themed design system, Lab Mode (pkexec/nftables), the 8 security
+tools, and report capture. A real build produced
+`image-<date>-aether-os.img.xz` (~800 MB) with all AETHER packages present and
+zero armhf packages.
 
-`[STATUS: UNTESTED]` — the scaffold is authored but has not been built or booted
-on hardware yet.
+`[STATUS: TESTED_EMULATOR]` for the build (pi-gen under qemu in a container);
+**boot on real Pi 4 hardware is still unverified** — flash it and check the
+greetd→labwc session and Lab Mode arm/disarm.
+
+Base note: the image is Debian **trixie** arm64, not bookworm — pi-gen's arm64
+branch targets trixie, and its bookworm branch is 32-bit only. Trixie also carries
+`swappy` and `fonts-jetbrains-mono`.
 
 ## Build
 

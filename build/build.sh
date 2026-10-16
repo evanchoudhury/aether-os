@@ -6,9 +6,10 @@ set -euo pipefail
 
 HERE="$(cd "$(dirname "$0")" && pwd)"
 PIGEN_DIR="${PIGEN_DIR:-$HERE/.pi-gen}"
-# Pin for reproducible builds. 'bookworm' is the stable branch; override with a
-# dated tag (e.g. PIGEN_REF=2024-11-19-raspios-bookworm) once you pick one.
-PIGEN_REF="${PIGEN_REF:-bookworm}"
+# pi-gen's 'bookworm' branch is 32-bit armhf only (it hardcodes --arch armhf and
+# the raspbian mirror). 64-bit arm64 images come from the 'arm64' branch. Pin a
+# dated arm64 tag for reproducibility once you pick one.
+PIGEN_REF="${PIGEN_REF:-arm64}"
 
 if ! command -v docker >/dev/null 2>&1; then
   echo "error: docker is required (run this in Linux/WSL2 with Docker)." >&2
@@ -30,6 +31,9 @@ cp -r "$HERE/stage-aether" "$PIGEN_DIR/stage-aether"
 find "$PIGEN_DIR/stage-aether" -name '*.sh' -exec chmod +x {} +
 # Only stage-aether should export an image, not the Lite stage.
 rm -f "$PIGEN_DIR/stage2/EXPORT_IMAGE"
+# pi-gen's build.sh sources config, then hardcodes `export ARCH=armhf`, which
+# clobbers ARCH=arm64 from our config. Force arm64 (our Pi 4 target) directly.
+sed -i 's/^export ARCH=armhf$/export ARCH=arm64/' "$PIGEN_DIR/build.sh"
 
 echo ">> building (this takes a while)"
 cd "$PIGEN_DIR"
