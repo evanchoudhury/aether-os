@@ -1,0 +1,16 @@
+/* AETHER design tokens -> GTK4/libadwaita named colors. */
+@define-color accent_color       #35D0BA;
+@define-color accent_bg_color    #35D0BA;
+@define-color accent_fg_color    #0E1116;
+@define-color window_bg_color    #0E1116;
+@define-color window_fg_color    #E6EAF0;
+@define-color view_bg_color      #171B22;
+@define-color view_fg_color      #E6EAF0;
+@define-color headerbar_bg_color #171B22;
+@define-color headerbar_fg_color #E6EAF0;
+@define-color card_bg_color      #1E242D;
+@define-color popover_bg_color   #1E242D;
+@define-color borders            #2A313C;
+@define-color error_color        #F85149;
+@define-color warning_color      #D29922;
+@define-color success_color      #3FB950;

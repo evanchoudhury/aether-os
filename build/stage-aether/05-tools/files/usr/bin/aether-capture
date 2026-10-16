@@ -1,0 +1,28 @@
+#!/bin/bash
+# AETHER report capture: screenshot (region or full) -> annotate in swappy ->
+# save to ~/AETHER/findings/ and append an entry to the findings log.
+# Bound to Print by labwc. [STATUS: UNTESTED]
+set -euo pipefail
+
+dir="${HOME}/AETHER/findings"
+mkdir -p "$dir"
+ts="$(date +%Y%m%d-%H%M%S)"
+img="$dir/$ts.png"
+
+# slurp lets the user pick a region; empty selection (Esc) -> full screen.
+region="$(slurp 2>/dev/null || true)"
+if [ -n "$region" ]; then
+	grim -g "$region" - | swappy -f - -o "$img"
+else
+	grim - | swappy -f - -o "$img"
+fi
+
+# swappy may exit without saving (user cancelled) -> no file, no log entry.
+[ -s "$img" ] || { echo "capture cancelled"; exit 0; }
+
+log="$dir/findings.md"
+[ -f "$log" ] || printf '# AETHER Findings\n\n' > "$log"
+printf '## %s\n\n![finding](%s)\n\n- note: \n\n' "$ts" "$(basename "$img")" >> "$log"
+
+command -v notify-send >/dev/null 2>&1 && notify-send "AETHER" "Finding saved: $ts" || true
+echo "saved $img"

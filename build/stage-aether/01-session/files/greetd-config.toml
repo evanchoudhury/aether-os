@@ -1,0 +1,9 @@
+# greetd launches a text login on VT1; on success it starts a labwc session
+# as the logged-in user (via systemd-logind seat — no seatd needed).
+# [STATUS: UNTESTED] verify this is the first thing on real hardware.
+[terminal]
+vt = 1
+
+[default_session]
+command = "agreety --cmd labwc"
+user = "_greetd"

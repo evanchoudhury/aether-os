@@ -1,0 +1,17 @@
+#!/bin/bash
+# AETHER Lab Mode — DISARM. Runs as root via pkexec (polkit action
+# com.aether.labmode.disarm). Takes NO arguments. Fully reverts to the everyday
+# firewall profile — a disarm that doesn't revert is worse than never arming.
+# [STATUS: UNTESTED]
+set -euo pipefail
+
+RULES=/etc/aether/nftables/everyday.nft
+STATE_DIR=/run/aether
+
+[ -r "$RULES" ] || { echo "aether: missing $RULES" >&2; exit 1; }
+
+nft -f "$RULES"
+
+mkdir -p "$STATE_DIR"
+echo safe > "$STATE_DIR/labmode"
+echo "aether: Lab Mode disarmed (everyday firewall profile restored)"

@@ -1,0 +1,40 @@
+{
+  "layer": "top",
+  "position": "top",
+  "height": 30,
+  "spacing": 4,
+  "modules-left": ["custom/aether", "custom/labmode"],
+  "modules-center": [],
+  "modules-right": ["cpu", "memory", "network", "pulseaudio", "clock"],
+
+  "custom/aether": {
+    "format": "AETHER",
+    "tooltip": false
+  },
+  "custom/labmode": {
+    "exec": "/usr/bin/aether-labmode-waybar",
+    "return-type": "json",
+    "interval": 2,
+    "tooltip": true
+  },
+  "clock": {
+    "format": "{:%a %d %b  %H:%M}"
+  },
+  "cpu": {
+    "format": "CPU {usage}%",
+    "interval": 5
+  },
+  "memory": {
+    "format": "RAM {percentage}%",
+    "interval": 5
+  },
+  "network": {
+    "format-wifi": "{essid} {signalStrength}%",
+    "format-ethernet": "eth",
+    "format-disconnected": "offline"
+  },
+  "pulseaudio": {
+    "format": "{volume}%",
+    "format-muted": "muted"
+  }
+}

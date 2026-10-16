@@ -1,0 +1,62 @@
+name: Build image
+
+# Build the AETHER OS image on a version tag and attach it to a GitHub Release.
+# [STATUS: UNTESTED] — never run (repo not yet on GitHub).
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write # needed to create the Release
+
+jobs:
+  build:
+    # Native arm64 runner: pi-gen builds without qemu emulation. Free for public
+    # repos; private repos need the larger-runner (paid) tier, or switch to an
+    # x86 runner + binfmt/qemu (much slower).
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 120
+    env:
+      GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
+      GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Free up disk space
+        run: |
+          sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/lib/android 2>/dev/null || true
+          df -h /
+
+      - name: Build image
+        run: |
+          cd build
+          ./build.sh
+
+      - name: Checksums
+        run: |
+          cd build/.pi-gen/deploy
+          ls -la
+          for f in *.img.xz; do sha256sum "$f" > "$f.sha256"; done
+
+      - name: Sign images (only if a GPG key secret is configured)
+        if: ${{ env.GPG_PRIVATE_KEY != '' }}
+        run: |
+          echo "$GPG_PRIVATE_KEY" | gpg --batch --import
+          cd build/.pi-gen/deploy
+          for f in *.img.xz; do
+            printf '%s' "$GPG_PASSPHRASE" | gpg --batch --yes \
+              --pinentry-mode loopback --passphrase-fd 0 \
+              --armor --detach-sign "$f"
+          done
+
+      - name: Create Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cd build/.pi-gen/deploy
+          files=$(ls -1 *.img.xz *.sha256 2>/dev/null; ls -1 *.asc 2>/dev/null || true)
+          echo "attaching:"; echo "$files"
+          gh release create "$GITHUB_REF_NAME" \
+            --title "AETHER OS $GITHUB_REF_NAME" \
+            --notes "Automated pi-gen build. Flash with Raspberry Pi Imager. No default credentials (first-boot setup); SSH off by default." \
+            $files

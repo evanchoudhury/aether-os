@@ -1,0 +1,18 @@
+#!/bin/bash
+# AETHER Lab Mode — ARM. Runs as root via pkexec (polkit action
+# com.aether.labmode.arm). Takes NO arguments: no user input reaches a shell,
+# so there is no injection surface. [STATUS: UNTESTED]
+set -euo pipefail
+
+RULES=/etc/aether/nftables/research.nft
+STATE_DIR=/run/aether
+
+[ -r "$RULES" ] || { echo "aether: missing $RULES" >&2; exit 1; }
+
+# Atomic load. If it fails, set -e exits non-zero and we do NOT write state,
+# so the UI must not show ARMED unless the firewall actually applied.
+nft -f "$RULES"
+
+mkdir -p "$STATE_DIR"
+echo armed > "$STATE_DIR/labmode"
+echo "aether: Lab Mode ARMED (research firewall profile loaded)"

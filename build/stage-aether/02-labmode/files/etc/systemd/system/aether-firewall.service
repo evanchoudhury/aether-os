@@ -1,0 +1,15 @@
+[Unit]
+Description=AETHER baseline firewall (everyday profile)
+DefaultDependencies=no
+Before=network-pre.target
+Wants=network-pre.target
+Conflicts=shutdown.target
+Before=shutdown.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/sbin/nft -f /etc/aether/nftables/everyday.nft
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,10 @@
+#!/bin/bash
+# waybar custom module: Lab Mode state as JSON (text label + CSS class).
+# Text is always SAFE/ARMED so it reads without color (colorblind-safe).
+set -euo pipefail
+
+state="$(cat /run/aether/labmode 2>/dev/null || echo safe)"
+case "$state" in
+  armed) printf '{"text":"ARMED","class":"armed","tooltip":"Lab Mode: armed"}\n' ;;
+  *)     printf '{"text":"SAFE","class":"safe","tooltip":"Lab Mode: safe"}\n' ;;
+esac

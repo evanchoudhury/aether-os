@@ -1,0 +1,18 @@
+# AETHER window decorations (labwc), from the token table.
+border.width: 1
+
+window.active.title.bg.color: #171B22
+window.active.border.color: #2A313C
+window.active.label.text.color: #E6EAF0
+
+window.inactive.title.bg.color: #0E1116
+window.inactive.border.color: #2A313C
+window.inactive.label.text.color: #9AA4B2
+
+window.active.button.iconify.unpressed.image.color: #9AA4B2
+window.active.button.maximize.unpressed.image.color: #9AA4B2
+window.active.button.close.unpressed.image.color: #F85149
+
+osd.bg.color: #171B22
+osd.border.color: #2A313C
+osd.label.text.color: #E6EAF0

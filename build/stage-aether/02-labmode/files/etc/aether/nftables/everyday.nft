@@ -1,0 +1,20 @@
+#!/usr/sbin/nft -f
+# AETHER everyday firewall profile: default-deny inbound, stateful. The box
+# boots into this (aether-firewall.service) and disarm restores it.
+flush ruleset
+
+table inet filter {
+	# Marker chain so a test can tell everyday from research. v0.1 only.
+	chain aether_everyday_marker { }
+
+	chain input {
+		type filter hook input priority filter; policy drop;
+		iif "lo" accept
+		ct state established,related accept
+		ct state invalid drop
+		ip protocol icmp accept
+		ip6 nexthdr ipv6-icmp accept
+	}
+	chain forward { type filter hook forward priority filter; policy drop; }
+	chain output { type filter hook output priority filter; policy accept; }
+}

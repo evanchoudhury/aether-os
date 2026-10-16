@@ -1,0 +1,11 @@
+# pi-gen checkout and build outputs
+build/.pi-gen/
+build/deploy/
+build/work/
+*.img
+*.img.xz
+*.img.zip
+
+# python bytecode
+__pycache__/
+*.pyc

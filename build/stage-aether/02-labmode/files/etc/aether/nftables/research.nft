@@ -1,0 +1,21 @@
+#!/usr/sbin/nft -f
+# AETHER research (Lab Mode armed) firewall profile. Still default-deny inbound:
+# arming the toolkit must NOT open the host up. v0.1 differs from everyday only
+# by the marker chain; later profiles may allow specific tool traffic, each
+# change reviewed. Loaded by lab-arm.
+flush ruleset
+
+table inet filter {
+	chain aether_research_marker { }
+
+	chain input {
+		type filter hook input priority filter; policy drop;
+		iif "lo" accept
+		ct state established,related accept
+		ct state invalid drop
+		ip protocol icmp accept
+		ip6 nexthdr ipv6-icmp accept
+	}
+	chain forward { type filter hook forward priority filter; policy drop; }
+	chain output { type filter hook output priority filter; policy accept; }
+}

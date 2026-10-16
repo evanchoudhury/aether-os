@@ -1,0 +1,14 @@
+#!/bin/bash
+# Open a CLI security tool in a terminal: show its --help, then drop into an
+# interactive shell so a learner can start using it. For GUI tools (wireshark)
+# launch the tool directly instead. [STATUS: UNTESTED]
+set -euo pipefail
+
+tool="${1:-}"
+[ -n "$tool" ] || { echo "usage: aether-tool <command>" >&2; exit 2; }
+
+exec foot bash -lc '
+  printf "=== AETHER :: %s ===\n\n" "$1"
+  "$1" --help 2>&1 | head -n 40 || true
+  printf "\n(ready — type %s ... to begin)\n\n" "$1"
+  exec bash' aether-tool "$tool"

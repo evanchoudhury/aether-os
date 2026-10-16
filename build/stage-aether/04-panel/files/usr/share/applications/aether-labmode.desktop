@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Lab Mode
+Comment=Arm or disarm AETHER Lab Mode
+Exec=aether-labmode-panel
+Icon=security-high
+Terminal=false
+Categories=System;Security;
+Keywords=lab;mode;security;firewall;pentest;

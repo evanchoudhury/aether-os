@@ -1,0 +1,4 @@
+# This tree targets Linux (pi-gen stage scripts, nft, systemd units). Force LF
+# so shell scripts never get a CRLF shebang when authored/checked out on Windows.
+* text=auto eol=lf
+*.png binary

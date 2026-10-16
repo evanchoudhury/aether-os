@@ -1,0 +1,25 @@
+# pi-gen config for AETHER OS v0.1 base image.
+# [STATUS: UNTESTED] — authored on Windows; build runs on Linux/WSL2 (see build.sh).
+IMG_NAME=aether-os
+RELEASE=bookworm
+ARCH=arm64
+
+# Base = Raspberry Pi OS Lite 64-bit (stage0..stage2), then our overlay.
+# Only stage-aether exports an image (build.sh removes stage2/EXPORT_IMAGE).
+STAGE_LIST="stage0 stage1 stage2 stage-aether"
+
+TARGET_HOSTNAME=aether
+LOCALE_DEFAULT=en_US.UTF-8
+KEYBOARD_KEYMAP=us
+KEYBOARD_LAYOUT="English (US)"
+TIMEZONE_DEFAULT=Etc/UTC
+
+# No baked credentials: leaving FIRST_USER_NAME/FIRST_USER_PASS unset makes
+# Raspberry Pi OS run its first-boot user-creation wizard. (Premise: no default
+# credentials; AETHER law 11.) Do NOT set a default password here.
+DISABLE_FIRST_BOOT_USER_RENAME=0
+
+# SSH stays disabled by default (security premise). Do not create /boot ssh file.
+
+DEPLOY_COMPRESSION=xz
+DEPLOY_ZIP=0

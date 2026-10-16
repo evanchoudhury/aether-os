@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- AETHER labwc root menu (right-click the desktop). Dependency-free tool
+     discoverability until a proper dock lands. -->
+<openbox_menu>
+  <menu id="root-menu" label="AETHER">
+    <item label="Terminal">
+      <action name="Execute"><command>foot</command></action>
+    </item>
+    <item label="Lab Mode">
+      <action name="Execute"><command>aether-labmode-panel</command></action>
+    </item>
+    <item label="Capture Finding">
+      <action name="Execute"><command>aether-capture</command></action>
+    </item>
+    <separator/>
+    <menu id="aether-tools-menu" label="Security Tools">
+      <item label="nmap (network scan)">
+        <action name="Execute"><command>aether-tool nmap</command></action>
+      </item>
+      <item label="tcpdump (packet dump)">
+        <action name="Execute"><command>aether-tool tcpdump</command></action>
+      </item>
+      <item label="Wireshark (packet analysis)">
+        <action name="Execute"><command>wireshark</command></action>
+      </item>
+      <item label="aircrack-ng (wireless)">
+        <action name="Execute"><command>aether-tool aircrack-ng</command></action>
+      </item>
+      <item label="John the Ripper (passwords)">
+        <action name="Execute"><command>aether-tool john</command></action>
+      </item>
+      <item label="hydra (login brute)">
+        <action name="Execute"><command>aether-tool hydra</command></action>
+      </item>
+      <item label="nikto (web scan)">
+        <action name="Execute"><command>aether-tool nikto</command></action>
+      </item>
+      <item label="sqlmap (sqli)">
+        <action name="Execute"><command>aether-tool sqlmap</command></action>
+      </item>
+    </menu>
+    <separator/>
+    <item label="Reconfigure">
+      <action name="Reconfigure"/>
+    </item>
+    <item label="Exit">
+      <action name="Exit"/>
+    </item>
+  </menu>
+</openbox_menu>

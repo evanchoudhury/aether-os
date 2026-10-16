@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<!-- AETHER labwc config: rounded corners + Inter titlebar font. Colors live in
+     themerc-override next to this file. -->
+<labwc_config>
+  <theme>
+    <cornerRadius>10</cornerRadius>
+    <font place="ActiveWindow">
+      <name>Inter</name>
+      <size>11</size>
+      <weight>bold</weight>
+      <slant>normal</slant>
+    </font>
+  </theme>
+  <keyboard>
+    <!-- Print: capture a finding. Super+Return: terminal. -->
+    <keybind key="Print"><action name="Execute"><command>aether-capture</command></action></keybind>
+    <keybind key="W-Return"><action name="Execute"><command>foot</command></action></keybind>
+  </keyboard>
+</labwc_config>
