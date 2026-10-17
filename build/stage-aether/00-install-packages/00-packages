@@ -25,3 +25,32 @@ john
 hydra
 nikto
 sqlmap
+# --- desktop apps (v0.2) ---
+# shell: launcher, notifications, lock
+fuzzel
+mako-notifier
+swaylock
+wl-clipboard
+cliphist
+swappy
+# files
+pcmanfm
+file-roller
+baobab
+# productivity
+mpv
+evince
+gnome-calculator
+wf-recorder
+gnome-text-editor
+# dev
+git
+vim
+# settings surfaces (no full GUI; these are the real config tools)
+pavucontrol
+network-manager-gnome
+# system monitoring + hardware
+lm-sensors
+i2c-tools
+# backup / recovery
+timeshift

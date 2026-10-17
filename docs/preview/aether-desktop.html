@@ -1,0 +1,546 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AETHER Desktop</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --accent:#35D0BA; --accent2:#2aa894;
+  --ink:#1b1f27; --ink-2:#5b6472;
+  --glass:rgba(255,255,255,.62);
+  --glass-strong:rgba(255,255,255,.8);
+  --hair:rgba(0,0,0,.08);
+  --win:rgba(250,251,253,.92);
+  --sidebar:rgba(236,239,244,.78);
+  --shadow:0 30px 70px -24px rgba(20,24,40,.55);
+  --radius:14px;
+  --ui:"Inter",system-ui,-apple-system,sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,monospace;
+  --dur:.28s; --ease:cubic-bezier(.16,1,.3,1);
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;overflow:hidden;font-family:var(--ui);color:var(--ink);
+  -webkit-font-smoothing:antialiased;user-select:none}
+#screen{position:fixed;inset:0;
+  background:
+    radial-gradient(900px 600px at 78% 8%, rgba(255,214,150,.75), transparent 60%),
+    radial-gradient(1000px 700px at 18% 20%, rgba(255,150,170,.55), transparent 58%),
+    radial-gradient(1200px 900px at 50% 120%, rgba(60,40,120,.9), transparent 60%),
+    linear-gradient(170deg,#3a3f8f 0%, #7d4aa0 40%, #c86a8e 70%, #f2a65a 100%);
+}
+#bright{position:fixed;inset:0;background:#000;opacity:0;pointer-events:none;transition:opacity .2s linear;z-index:40}
+
+/* ---------- menu bar ---------- */
+#menubar{position:fixed;top:0;left:0;right:0;height:28px;z-index:30;
+  display:flex;align-items:center;gap:18px;padding:0 12px;
+  background:var(--glass);backdrop-filter:saturate(1.6) blur(22px);
+  -webkit-backdrop-filter:saturate(1.6) blur(22px);
+  border-bottom:1px solid var(--hair);font-size:13px;font-weight:500}
+#menubar .logo{display:flex}
+#menubar .app{font-weight:700}
+#menubar .m{color:#2b3340;opacity:.9;cursor:default}
+#menubar .m:hover{opacity:1}
+#menubar .right{margin-left:auto;display:flex;align-items:center;gap:16px}
+#menubar .right .i{cursor:pointer;display:flex;align-items:center;gap:6px}
+#menubar .clock{font-variant-numeric:tabular-nums;font-weight:600}
+.labpill{display:inline-flex;align-items:center;gap:6px;font-weight:700;font-size:11px;letter-spacing:.4px;
+  padding:2px 8px;border-radius:999px;border:1px solid rgba(0,0,0,.12);color:#5b6472;background:rgba(255,255,255,.5)}
+.labpill .d{width:7px;height:7px;border-radius:50%;background:#9aa4b2;transition:background var(--dur) var(--ease)}
+body.armed .labpill{color:#9a6b00;border-color:rgba(210,153,34,.5);background:rgba(255,224,150,.6)}
+body.armed .labpill .d{background:#D29922;box-shadow:0 0 0 3px rgba(210,153,34,.25)}
+svg.mi{width:15px;height:15px;stroke:#222;fill:none;stroke-width:1.7}
+
+/* ---------- windows ---------- */
+.window{position:absolute;min-width:260px;min-height:150px;background:var(--win);border:1px solid rgba(0,0,0,.1);
+  border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden;backdrop-filter:blur(30px);
+  -webkit-backdrop-filter:blur(30px);display:flex;flex-direction:column;
+  transition:opacity .18s var(--ease), transform .18s var(--ease)}
+.titlebar{flex:none}
+/* resize handles */
+.rsz{position:absolute;z-index:3}
+.rsz.n{top:-3px;left:8px;right:8px;height:7px;cursor:ns-resize}
+.rsz.s{bottom:-3px;left:8px;right:8px;height:7px;cursor:ns-resize}
+.rsz.e{right:-3px;top:8px;bottom:8px;width:7px;cursor:ew-resize}
+.rsz.w{left:-3px;top:8px;bottom:8px;width:7px;cursor:ew-resize}
+.rsz.ne{top:-4px;right:-4px;width:14px;height:14px;cursor:nesw-resize}
+.rsz.nw{top:-4px;left:-4px;width:14px;height:14px;cursor:nwse-resize}
+.rsz.se{bottom:-4px;right:-4px;width:14px;height:14px;cursor:nwse-resize}
+.rsz.sw{bottom:-4px;left:-4px;width:14px;height:14px;cursor:nesw-resize}
+.window.closing{opacity:0;transform:scale(.96)}
+.window.min{opacity:0;transform:translateY(62vh) scale(.35);transform-origin:50% 100%;pointer-events:none}
+.tl i{cursor:pointer}
+.titlebar{height:40px;display:flex;align-items:center;gap:8px;padding:0 12px;cursor:grab;
+  background:linear-gradient(180deg, rgba(255,255,255,.7), rgba(245,247,250,.55));border-bottom:1px solid var(--hair)}
+.titlebar:active{cursor:grabbing}
+.tl{display:flex;gap:8px}
+.tl i{width:13px;height:13px;border-radius:50%;display:grid;place-items:center;border:1px solid rgba(0,0,0,.12);cursor:pointer;transition:transform .12s var(--ease)}
+.tl i:hover{transform:scale(1.25)}
+.tl i::before{font-weight:800;font-size:10px;line-height:1;color:rgba(0,0,0,.55);opacity:0;transition:opacity .1s;pointer-events:none}
+.titlebar:hover .tl i::before{opacity:1}
+.tl .r{background:#ff5f57}.tl .y{background:#febc2e}.tl .g{background:#28c840}
+.tl .r::before{content:"\00d7"}.tl .y::before{content:"\2013"}.tl .g::before{content:"+";font-size:11px}
+.title{font-weight:600;font-size:13px;margin-left:4px;color:#2b3340}
+.wbody{font-size:13px;flex:1;min-height:0;overflow:auto}
+.split{display:flex;min-height:300px;height:100%}
+.side{width:190px;background:var(--sidebar);border-right:1px solid var(--hair);padding:12px 8px}
+.side .grp{font-size:11px;font-weight:700;color:#8a93a0;text-transform:uppercase;letter-spacing:.6px;margin:10px 8px 4px}
+.side .it{display:flex;align-items:center;gap:9px;padding:6px 8px;border-radius:7px;color:#374151;cursor:pointer}
+.side .it:hover{background:rgba(0,0,0,.05)}
+.side .it.sel{background:var(--accent);color:#06211d;font-weight:600}
+.side .it svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:1.8}
+.main{flex:1;padding:16px;overflow:auto}
+
+/* security center content */
+.sc .line{display:flex;align-items:center;gap:10px;padding:11px 2px;border-bottom:1px solid var(--hair)}
+.sc .line:last-child{border:0}.sc .nm{flex:1}
+.sc .sub{color:#8a93a0;font-size:11px}
+.pill{font-size:11px;font-weight:700;padding:3px 9px;border-radius:999px}
+.pill.ok{color:#1a7f37;background:rgba(40,200,80,.14)}
+.pill.warn{color:#9a6b00;background:rgba(254,188,46,.18)}
+.pill.na{color:#6b7280;background:rgba(120,130,145,.14)}
+.score{display:flex;align-items:center;gap:14px;margin-bottom:14px}
+.ring{width:58px;height:58px;border-radius:50%;background:conic-gradient(var(--accent) 0 78%, rgba(0,0,0,.08) 78% 100%);
+  display:grid;place-items:center}
+.ring b{background:var(--win);width:44px;height:44px;border-radius:50%;display:grid;place-items:center;font-weight:800}
+
+/* lab mode window */
+.lab .top{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+.lab .st{flex:1;font-weight:800;letter-spacing:1px;color:#5b6472}
+body.armed .lab .st{color:#9a6b00}
+.switch{width:50px;height:28px;border-radius:999px;background:#cbd2db;position:relative;cursor:pointer;transition:background var(--dur) var(--ease);flex:none}
+.switch::after{content:"";position:absolute;top:3px;left:3px;width:22px;height:22px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.3);transition:transform var(--dur) var(--ease)}
+body.armed .switch{background:#D29922}
+body.armed .switch::after{transform:translateX(22px)}
+.scopebar{display:grid;grid-template-rows:0fr;transition:grid-template-rows var(--dur) var(--ease)}
+body.armed .scopebar{grid-template-rows:1fr}
+.scopebar>div{overflow:hidden}
+.scopebar .in{margin-top:4px;padding:8px 11px;border:1px solid #D29922;background:rgba(255,224,150,.5);border-radius:9px;
+  color:#8a5a00;font-size:12px;font-weight:600;opacity:0;transform:translateY(-6px);transition:all var(--dur) var(--ease)}
+body.armed .scopebar .in{opacity:1;transform:none}
+.fwline{font-size:13px;color:#5b6472;margin-top:12px}.fwline b{color:#1b1f27}
+
+/* terminal window */
+.term{background:#0d1117;color:#cdd6e4;font-family:var(--mono);font-size:12.5px;line-height:1.7;padding:14px 16px;min-height:260px;width:460px}
+.term .p{color:var(--accent)} .term .c{color:#8a93a0} .term .a{color:#D29922}
+
+/* system monitor */
+.mon .bar{height:9px;border-radius:999px;background:rgba(0,0,0,.08);overflow:hidden;margin:4px 0 12px}
+.mon .bar i{display:block;height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:999px}
+.mon .lab{display:flex;justify-content:space-between;font-size:12px;color:#5b6472;font-weight:600}
+
+/* ---------- control center ---------- */
+#cc{position:fixed;top:34px;right:10px;width:330px;z-index:35;
+  background:rgba(245,247,250,.72);backdrop-filter:saturate(1.6) blur(32px);-webkit-backdrop-filter:saturate(1.6) blur(32px);
+  border:1px solid rgba(255,255,255,.6);border-radius:18px;box-shadow:var(--shadow);padding:12px;
+  display:grid;grid-template-columns:1fr 1fr;gap:10px;opacity:0;transform:translateY(-8px) scale(.98);pointer-events:none;transition:all .2s var(--ease)}
+#cc.open{opacity:1;transform:none;pointer-events:auto}
+.cc-card{background:rgba(255,255,255,.55);border:1px solid rgba(255,255,255,.6);border-radius:14px;padding:12px}
+.cc-wide{grid-column:span 2}
+.cc-toggle{display:flex;align-items:center;gap:10px;cursor:pointer;padding:6px 2px}
+.cc-toggle .ic{width:34px;height:34px;border-radius:50%;background:rgba(0,0,0,.12);display:grid;place-items:center;transition:background var(--dur) var(--ease)}
+.cc-toggle.on .ic{background:var(--accent)}
+.cc-toggle .ic svg{width:17px;height:17px;stroke:#fff;fill:none;stroke-width:2}
+.cc-toggle .tx b{display:block;font-size:12.5px}.cc-toggle .tx span{font-size:11px;color:#6b7280}
+.slider{display:flex;align-items:center;gap:10px;margin-top:6px}
+.slider svg{width:16px;height:16px;stroke:#444;fill:none;stroke-width:1.8;flex:none}
+.slider input{flex:1;accent-color:var(--accent)}
+.np{display:flex;align-items:center;gap:12px}
+.np .art{width:46px;height:46px;border-radius:9px;background:linear-gradient(135deg,var(--accent),#5a7cff);flex:none;display:grid;place-items:center;color:#fff;font-weight:800}
+.np .meta{flex:1;min-width:0}.np .meta b{display:block;font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.np .meta span{font-size:11px;color:#6b7280}
+.np .ctl{display:flex;gap:6px}.np .ctl button{border:0;background:transparent;cursor:pointer;padding:4px}
+.np .ctl svg{width:18px;height:18px;fill:#2b3340}
+.np .prog{height:3px;background:rgba(0,0,0,.12);border-radius:3px;margin-top:8px;overflow:hidden}
+.np .prog i{display:block;height:100%;width:38%;background:var(--accent)}
+
+/* ---------- launchpad ---------- */
+#pad{position:fixed;inset:0;z-index:38;background:rgba(30,20,50,.35);backdrop-filter:blur(40px) saturate(1.3);
+  -webkit-backdrop-filter:blur(40px) saturate(1.3);display:grid;place-items:center;opacity:0;pointer-events:none;transition:opacity .22s var(--ease)}
+#pad.open{opacity:1;pointer-events:auto}
+#pad .grid{display:grid;grid-template-columns:repeat(6,120px);gap:30px 36px}
+#pad .papp{display:flex;flex-direction:column;align-items:center;gap:8px;color:#fff;cursor:pointer;transition:transform .15s var(--ease)}
+#pad .papp:hover{transform:scale(1.07)}
+#pad .papp .tile{width:74px;height:74px;border-radius:18px;display:grid;place-items:center;box-shadow:0 14px 30px -10px rgba(0,0,0,.5)}
+#pad .papp .tile svg{width:38px;height:38px;stroke:#fff;fill:none;stroke-width:1.8}
+#pad .papp .nm{font-size:12.5px;font-weight:500;text-shadow:0 1px 3px rgba(0,0,0,.5)}
+
+/* ---------- dock ---------- */
+#dock{position:fixed;left:50%;bottom:8px;transform:translateX(-50%);z-index:36;
+  display:flex;align-items:flex-end;gap:8px;padding:8px 12px;border-radius:22px;
+  background:rgba(255,255,255,.34);backdrop-filter:saturate(1.6) blur(24px);-webkit-backdrop-filter:saturate(1.6) blur(24px);
+  border:1px solid rgba(255,255,255,.5);box-shadow:0 20px 45px -18px rgba(0,0,0,.5)}
+#dock .di{width:52px;height:52px;border-radius:14px;display:grid;place-items:center;cursor:pointer;position:relative;
+  transition:transform .18s var(--ease), margin .18s var(--ease)}
+#dock .di:hover{transform:translateY(-14px) scale(1.35);margin:0 10px}
+#dock .di:hover ~ .di{}
+#dock .di .tile{width:100%;height:100%;border-radius:14px;display:grid;place-items:center;box-shadow:0 6px 14px -6px rgba(0,0,0,.5)}
+#dock .di .tile svg{width:26px;height:26px;stroke:#fff;fill:none;stroke-width:1.8}
+#dock .di.tool{filter:grayscale(.35);opacity:.8;transition:filter var(--dur) var(--ease),opacity var(--dur) var(--ease)}
+body.armed #dock .di.tool{filter:none;opacity:1}
+#dock .di .run{position:absolute;bottom:-5px;left:50%;transform:translateX(-50%);width:4px;height:4px;border-radius:50%;background:#333;opacity:0}
+#dock .di.running .run{opacity:.7}
+#dock .sep{width:1px;height:40px;background:rgba(255,255,255,.5);margin:0 4px;align-self:center}
+#dock .di .tip{position:absolute;top:-30px;left:50%;transform:translateX(-50%);background:rgba(20,24,30,.9);color:#fff;
+  font-size:11px;padding:3px 8px;border-radius:6px;white-space:nowrap;opacity:0;pointer-events:none;transition:opacity .12s}
+#dock .di:hover .tip{opacity:1}
+
+.app-grad-1{background:linear-gradient(135deg,#35D0BA,#2a8bff)}
+.app-grad-2{background:linear-gradient(135deg,#6a7cff,#9a4dff)}
+.app-grad-3{background:linear-gradient(135deg,#2b3340,#5b6472)}
+.app-grad-4{background:linear-gradient(135deg,#ff7a59,#ff4d8d)}
+.app-grad-5{background:linear-gradient(135deg,#1a7f37,#35D0BA)}
+.app-grad-6{background:linear-gradient(135deg,#D29922,#ff7a59)}
+.app-grad-7{background:linear-gradient(135deg,#58a6ff,#35D0BA)}
+/* wifi / bluetooth popovers */
+.pop{position:fixed;top:32px;z-index:37;width:288px;background:rgba(245,247,250,.8);
+  backdrop-filter:saturate(1.6) blur(32px);-webkit-backdrop-filter:saturate(1.6) blur(32px);
+  border:1px solid rgba(255,255,255,.6);border-radius:16px;box-shadow:var(--shadow);padding:10px;
+  opacity:0;transform:translateY(-8px);pointer-events:none;transition:all .18s var(--ease)}
+.pop.open{opacity:1;transform:none;pointer-events:auto}
+.pop .hd{display:flex;align-items:center;justify-content:space-between;font-weight:700;font-size:13px;padding:4px 6px 8px}
+.pop .hd .sw{width:40px;height:23px;border-radius:999px;background:var(--accent);position:relative;cursor:pointer}
+.pop .hd .sw::after{content:"";position:absolute;top:3px;left:20px;width:17px;height:17px;border-radius:50%;background:#fff;box-shadow:0 1px 2px rgba(0,0,0,.3);transition:left .2s}
+.pop .hd .sw.off{background:#cbd2db}.pop .hd .sw.off::after{left:3px}
+.pop .sec{font-size:11px;font-weight:700;color:#8a93a0;text-transform:uppercase;letter-spacing:.5px;padding:6px 6px 2px}
+.pop .row{display:flex;align-items:center;gap:10px;padding:8px;border-radius:9px;cursor:pointer;font-size:13px}
+.pop .row:hover{background:rgba(0,0,0,.06)}
+.pop .row .nm{flex:1}
+.pop .row .chk{color:var(--accent);font-weight:800;opacity:0}
+.pop .row.on .chk{opacity:1}.pop .row.on{font-weight:600}
+.pop .row svg{width:16px;height:16px;stroke:#444;fill:none;stroke-width:1.7}
+.bars{display:inline-flex;align-items:flex-end;gap:2px;height:13px}
+.bars i{width:3px;background:#2b3340;border-radius:1px}
+.bars.w i{background:#9aa4b2}
+/* terminal interactive */
+.term .inline{display:flex;gap:7px;align-items:baseline}
+.term input{flex:1;background:transparent;border:0;outline:0;color:#cdd6e4;font-family:var(--mono);font-size:12.5px;caret-color:var(--accent);padding:0}
+.term .out{white-space:pre-wrap;word-break:break-word}
+.term{height:100%}
+.hintbar{position:fixed;left:50%;bottom:72px;transform:translateX(-50%);z-index:20;color:#fff;font-size:12px;
+  background:rgba(0,0,0,.28);padding:5px 12px;border-radius:999px;backdrop-filter:blur(8px)}
+</style>
+</head>
+<body>
+<div id="screen"></div>
+<div id="bright"></div>
+
+<!-- MENU BAR -->
+<div id="menubar">
+  <span class="logo"><svg width="16" height="16" viewBox="0 0 24 24"><path d="M12 2l9 19H3z" fill="#1b1f27"/><path d="M12 8l4.5 9h-9z" fill="#35D0BA"/></svg></span>
+  <span class="app">AETHER</span>
+  <span class="m">File</span><span class="m">Edit</span><span class="m">View</span><span class="m">Window</span><span class="m">Help</span>
+  <span class="right">
+    <span class="labpill" id="labpill" onclick="toggleArm()"><span class="d"></span><span id="lptext">SAFE</span></span>
+    <span class="i" onclick="toggleWifi(event)" title="Wi-Fi"><svg class="mi" viewBox="0 0 24 24"><path d="M5 12.5a10 10 0 0 1 14 0"/><path d="M8.5 15.5a5 5 0 0 1 7 0"/><circle cx="12" cy="18.5" r="1" fill="#222" stroke="none"/></svg></span>
+    <span class="i" onclick="toggleBt(event)" title="Bluetooth"><svg class="mi" viewBox="0 0 24 24"><path d="M9 7l6 5-6 5V7z"/><path d="M15 5l3 2-3 2M15 15l3 2-3 2"/></svg></span>
+    <span class="i" onclick="toggleCC()" title="Control Center"><svg class="mi" viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="6" rx="3"/><rect x="4" y="13" width="16" height="6" rx="3"/><circle cx="9" cy="8" r="1.4" fill="#222" stroke="none"/><circle cx="15" cy="16" r="1.4" fill="#222" stroke="none"/></svg></span>
+    <span class="i clock" id="clock">Tue 21:40</span>
+  </span>
+</div>
+
+<!-- CONTROL CENTER -->
+<div id="cc">
+  <div class="cc-card">
+    <div class="cc-toggle on" onclick="this.classList.toggle('on')"><div class="ic"><svg viewBox="0 0 24 24"><path d="M5 12.5a10 10 0 0 1 14 0M8.5 15.5a5 5 0 0 1 7 0"/><circle cx="12" cy="18.5" r="1" fill="#fff" stroke="none"/></svg></div><div class="tx"><b>Wi-Fi</b><span>AETHER-Lab</span></div></div>
+    <div class="cc-toggle on" onclick="this.classList.toggle('on')"><div class="ic"><svg viewBox="0 0 24 24"><path d="M8 7l8 10-4 3V4l4 3L8 17"/></svg></div><div class="tx"><b>Bluetooth</b><span>On</span></div></div>
+  </div>
+  <div class="cc-card">
+    <div class="cc-toggle" onclick="this.classList.toggle('on')"><div class="ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/></svg></div><div class="tx"><b>Focus</b><span>Off</span></div></div>
+    <div class="cc-toggle on" id="ccLab" onclick="toggleArm()"><div class="ic"><svg viewBox="0 0 24 24"><path d="M9 3h6M10 3v5l-5 9a2 2 0 0 0 2 3h10a2 2 0 0 0 2-3l-5-9V3"/></svg></div><div class="tx"><b>Lab Mode</b><span id="ccLabSt">Safe</span></div></div>
+  </div>
+  <div class="cc-card cc-wide">
+    <div style="font-size:12px;font-weight:700;margin-bottom:2px">Display</div>
+    <div class="slider"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M18.4 5.6L17 7M7 17l-1.4 1.4"/></svg><input type="range" min="0" max="100" value="88" oninput="document.getElementById('bright').style.opacity=(1-this.value/100)*0.7"></div>
+  </div>
+  <div class="cc-card cc-wide">
+    <div style="font-size:12px;font-weight:700;margin-bottom:2px">Sound</div>
+    <div class="slider"><svg viewBox="0 0 24 24"><path d="M4 9v6h4l5 4V5L8 9H4z"/><path d="M16 9a4 4 0 0 1 0 6"/></svg><input type="range" min="0" max="100" value="62"></div>
+  </div>
+  <div class="cc-card cc-wide">
+    <div class="np">
+      <div class="art">♪</div>
+      <div class="meta"><b id="npTitle">Nightdrive</b><span id="npArtist">Monolith — Research Sessions</span><div class="prog"><i id="npBar"></i></div></div>
+      <div class="ctl">
+        <button onclick="npPrev()"><svg viewBox="0 0 24 24"><path d="M7 5v14M20 5l-10 7 10 7V5z"/></svg></button>
+        <button onclick="npPlay()" id="npBtn"><svg viewBox="0 0 24 24"><path d="M7 5l12 7-12 7V5z"/></svg></button>
+        <button onclick="npNext()"><svg viewBox="0 0 24 24"><path d="M17 5v14M4 5l10 7L4 19V5z"/></svg></button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- WIFI POPOVER -->
+<div class="pop" id="wifiPop" style="right:96px">
+  <div class="hd">Wi-Fi <span class="sw" id="wifiSw" onclick="wifiPower(this)"></span></div>
+  <div id="wifiList">
+    <div class="sec">Connected</div>
+    <div class="row on" onclick="wifiPick(this)"><svg viewBox="0 0 24 24"><path d="M12 20h.01M5 12.5a10 10 0 0 1 14 0M8.5 15.5a5 5 0 0 1 7 0"/></svg><span class="nm">AETHER-Lab</span><svg class="lk" viewBox="0 0 24 24"><rect x="6" y="11" width="12" height="9" rx="1.5"/><path d="M8.5 11V8a3.5 3.5 0 0 1 7 0v3"/></svg><span class="bars"><i style="height:4px"></i><i style="height:7px"></i><i style="height:10px"></i><i style="height:13px"></i></span><span class="chk">&#10003;</span></div>
+    <div class="sec">Other networks</div>
+    <div class="row" onclick="wifiPick(this)"><svg viewBox="0 0 24 24"><path d="M12 20h.01M5 12.5a10 10 0 0 1 14 0M8.5 15.5a5 5 0 0 1 7 0"/></svg><span class="nm">Neighbor-5G</span><svg class="lk" viewBox="0 0 24 24"><rect x="6" y="11" width="12" height="9" rx="1.5"/><path d="M8.5 11V8a3.5 3.5 0 0 1 7 0v3"/></svg><span class="bars"><i style="height:4px"></i><i style="height:7px"></i><i style="height:10px"></i><i style="height:5px;background:#cbd2db"></i></span><span class="chk">&#10003;</span></div>
+    <div class="row" onclick="wifiPick(this)"><svg viewBox="0 0 24 24"><path d="M12 20h.01M5 12.5a10 10 0 0 1 14 0M8.5 15.5a5 5 0 0 1 7 0"/></svg><span class="nm">CoffeeShop_Guest</span><span class="bars"><i style="height:4px"></i><i style="height:7px"></i><i style="height:5px;background:#cbd2db"></i><i style="height:5px;background:#cbd2db"></i></span><span class="chk">&#10003;</span></div>
+    <div class="row" onclick="wifiPick(this)"><svg viewBox="0 0 24 24"><path d="M12 20h.01M5 12.5a10 10 0 0 1 14 0M8.5 15.5a5 5 0 0 1 7 0"/></svg><span class="nm">Pixel_9150</span><svg class="lk" viewBox="0 0 24 24"><rect x="6" y="11" width="12" height="9" rx="1.5"/><path d="M8.5 11V8a3.5 3.5 0 0 1 7 0v3"/></svg><span class="bars"><i style="height:4px"></i><i style="height:5px;background:#cbd2db"></i><i style="height:5px;background:#cbd2db"></i><i style="height:5px;background:#cbd2db"></i></span><span class="chk">&#10003;</span></div>
+    <div class="row" onclick="wifiPick(this)"><svg viewBox="0 0 24 24"><path d="M12 20h.01M5 12.5a10 10 0 0 1 14 0M8.5 15.5a5 5 0 0 1 7 0"/></svg><span class="nm">xfinitywifi</span><span class="bars"><i style="height:4px"></i><i style="height:5px;background:#cbd2db"></i><i style="height:5px;background:#cbd2db"></i><i style="height:5px;background:#cbd2db"></i></span><span class="chk">&#10003;</span></div>
+  </div>
+</div>
+
+<!-- BLUETOOTH POPOVER -->
+<div class="pop" id="btPop" style="right:66px">
+  <div class="hd">Bluetooth <span class="sw" id="btSw" onclick="btPower(this)"></span></div>
+  <div id="btList">
+    <div class="sec">My devices</div>
+    <div class="row on" onclick="btPick(this)"><svg viewBox="0 0 24 24"><path d="M6 8h12M4 12h3M17 12h3M9 20V4l6 5-4 3 4 3-6 5"/></svg><span class="nm">AETHER Keyboard</span><span class="nm" style="flex:none;color:#8a93a0;font-size:11px">Connected</span><span class="chk">&#10003;</span></div>
+    <div class="row on" onclick="btPick(this)"><svg viewBox="0 0 24 24"><path d="M12 3a4 4 0 0 1 4 4v10a4 4 0 0 1-8 0V7a4 4 0 0 1 4-4z"/></svg><span class="nm">MX Master Mouse</span><span class="nm" style="flex:none;color:#8a93a0;font-size:11px">Connected</span><span class="chk">&#10003;</span></div>
+    <div class="sec">Other devices</div>
+    <div class="row" onclick="btPick(this)"><svg viewBox="0 0 24 24"><circle cx="8" cy="15" r="3"/><circle cx="16" cy="15" r="3"/><path d="M5 15V9a7 7 0 0 1 14 0v6"/></svg><span class="nm">AirBuds Pro</span><span class="chk">&#10003;</span></div>
+    <div class="row" onclick="btPick(this)"><svg viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="16" rx="2"/><path d="M9 8h6M9 12h6"/></svg><span class="nm">Pi Pico BLE</span><span class="chk">&#10003;</span></div>
+  </div>
+</div>
+
+<!-- LAUNCHPAD -->
+<div id="pad" onclick="if(event.target===this)togglePad()">
+  <div class="grid" id="padGrid"></div>
+</div>
+
+<!-- WINDOWS mounted by JS -->
+<div id="desk"></div>
+
+<div class="hintbar">Drag windows by their title bar · click the dock to launch · top-right icons open Control Center · click Lab Mode to arm</div>
+
+<!-- DOCK -->
+<div id="dock"></div>
+
+<script>
+/* ---------------- state ---------------- */
+let z = 10;
+const clock = document.getElementById('clock');
+function tick(){ const d=new Date(); const days=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  clock.textContent = days[d.getDay()]+' '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0'); }
+tick(); setInterval(tick,1000);
+
+/* ---------------- control center ---------------- */
+function toggleCC(){ document.getElementById('cc').classList.toggle('open'); }
+document.addEventListener('mousedown',e=>{ const cc=document.getElementById('cc');
+  if(cc.classList.contains('open') && !cc.contains(e.target) && !e.target.closest('[onclick="toggleCC()"]')) cc.classList.remove('open');
+  ['wifiPop','btPop'].forEach(id=>{ const p=document.getElementById(id); if(p&&p.classList.contains('open') && !p.contains(e.target)) p.classList.remove('open'); });
+});
+/* ---- wifi / bluetooth ---- */
+function closePops(ex){ ['wifiPop','btPop'].forEach(id=>{ if(id!==ex){const p=document.getElementById(id); if(p)p.classList.remove('open');} }); }
+function toggleWifi(e){ e.stopPropagation(); document.getElementById('cc').classList.remove('open'); const p=document.getElementById('wifiPop'); const o=p.classList.contains('open'); closePops('wifiPop'); p.classList.toggle('open',!o); }
+function toggleBt(e){ e.stopPropagation(); document.getElementById('cc').classList.remove('open'); const p=document.getElementById('btPop'); const o=p.classList.contains('open'); closePops('btPop'); p.classList.toggle('open',!o); }
+function wifiPick(el){ document.querySelectorAll('#wifiList .row').forEach(r=>r.classList.remove('on')); el.classList.add('on'); }
+function btPick(el){ el.classList.toggle('on'); }
+function wifiPower(sw){ sw.classList.toggle('off'); const l=document.getElementById('wifiList'); const off=sw.classList.contains('off'); l.style.opacity=off?.35:1; l.style.pointerEvents=off?'none':'auto'; }
+function btPower(sw){ sw.classList.toggle('off'); const l=document.getElementById('btList'); const off=sw.classList.contains('off'); l.style.opacity=off?.35:1; l.style.pointerEvents=off?'none':'auto'; }
+/* ---- terminal ---- */
+function armedOn(){ return document.body.classList.contains('armed'); }
+function escapeHtml(s){ return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function runCmd(c){
+  const a=c.split(/\s+/).filter(Boolean); const base=a[0]||'';
+  if(!base) return '';
+  switch(base){
+    case 'help': return 'Available commands:\n  aether-labmode {arm|disarm|status}   arm/disarm Lab Mode (updates the desktop)\n  nft list ruleset                     show the active firewall\n  ls  pwd  whoami  id  uname -a        system info\n  neofetch                             summary\n  nmap <target>                        scan a host\n  echo <text>   clear';
+    case 'clear': return '__CLEAR__';
+    case 'whoami': return 'aether';
+    case 'id': return 'uid=1000(aether) gid=1000(aether) groups=1000(aether),27(sudo),44(video),109(render),105(netdev)';
+    case 'pwd': return '/home/aether';
+    case 'uname': return 'Linux aether 6.18.50+rpt-rpi-v8 #1 SMP PREEMPT aarch64 GNU/Linux';
+    case 'ls': return 'AETHER/   findings/   captures/   notes.md   scope.json';
+    case 'echo': return escapeHtml(a.slice(1).join(' '));
+    case 'neofetch': return '<span class="p">aether@aether</span>\n----------------\nOS: AETHER OS (Debian trixie) aarch64\nHost: Raspberry Pi 4 Model B\nKernel: 6.18.50+rpt-rpi-v8\nWM: labwc (Wayland)  ·  Shell: bash\nLab Mode: '+(armedOn()?'<span class="a">ARMED</span>':'safe');
+    case 'aether-labmode':{ const s=a[1]||'status';
+      if(s==='status') return armedOn()?'armed':'safe';
+      if(s==='arm'){ if(!armedOn())toggleArm(); return '<span class="c">Authenticating via pkexec…</span>\n<span class="a">aether: Lab Mode ARMED (research firewall profile loaded)</span>'; }
+      if(s==='disarm'){ if(armedOn())toggleArm(); return 'aether: Lab Mode disarmed (everyday firewall profile restored)'; }
+      return 'usage: aether-labmode {arm|disarm|status}'; }
+    case 'nft':{ if(a[1]==='list'){ const m=armedOn()?'aether_research_marker':'aether_everyday_marker';
+        return 'table inet filter {\n  chain '+m+' { }\n  chain input {\n    type filter hook input priority filter; policy drop;\n    iif "lo" accept\n    ct state established,related accept\n  }\n  chain forward { type filter hook forward priority filter; policy drop; }\n  chain output { type filter hook output priority filter; policy accept; }\n}'; }
+      return 'nft: try: nft list ruleset'; }
+    case 'nmap':{ const t=a[a.length-1]||'10.0.0.1';
+      return 'Starting Nmap 7.95 ( https://nmap.org )\nNmap scan report for '+escapeHtml(t)+'\nHost is up (0.0021s latency).\nPORT     STATE SERVICE\n22/tcp   open  ssh\n80/tcp   open  http\n443/tcp  open  https\nNmap done: 1 IP address (1 host up) scanned in 1.84s'; }
+    case 'sudo': return runCmd(a.slice(1).join(' '));
+    default: return '<span class="c">bash: '+escapeHtml(base)+': command not found</span>  (try: help)';
+  }
+}
+function initTerm(el){
+  const inp=el.querySelector('#termIn'), out=el.querySelector('#termOut'), wb=el.querySelector('.wbody');
+  if(!inp)return; setTimeout(()=>inp.focus(),60);
+  el.addEventListener('mousedown',e=>{ if(!e.target.closest('.tl')&&!e.target.closest('.rsz')) setTimeout(()=>inp.focus(),0); });
+  inp.addEventListener('keydown',e=>{ if(e.key!=='Enter')return;
+    const cmd=inp.value; inp.value='';
+    const ln=document.createElement('div'); ln.innerHTML='<span class="p">aether@aether</span><span class="c">:~$</span> '+escapeHtml(cmd); out.appendChild(ln);
+    const res=runCmd(cmd.trim());
+    if(res==='__CLEAR__') out.innerHTML='';
+    else if(res){ const r=document.createElement('div'); r.className='out'; r.innerHTML=res; out.appendChild(r); }
+    if(wb) wb.scrollTop=wb.scrollHeight;
+  });
+}
+
+/* ---------------- lab mode ---------------- */
+function toggleArm(){ const on=!document.body.classList.contains('armed'); document.body.classList.toggle('armed',on);
+  document.getElementById('lptext').textContent=on?'ARMED':'SAFE';
+  document.getElementById('ccLab').classList.toggle('on',true);
+  document.getElementById('ccLabSt').textContent=on?'Armed':'Safe';
+  document.querySelectorAll('[data-labst]').forEach(el=>el.textContent=on?'ARMED':'SAFE');
+  document.querySelectorAll('[data-fw]').forEach(el=>el.innerHTML='Firewall: <b>'+(on?'research profile':'everyday profile')+'</b>');
+}
+
+/* ---------------- now playing ---------------- */
+let playing=true, tracks=[['Nightdrive','Monolith — Research Sessions'],['Signal Path','Kessler'],['Cold Boot','Arcnet']], ti=0;
+function npPlay(){ playing=!playing; document.getElementById('npBtn').innerHTML = playing
+  ? '<svg viewBox="0 0 24 24"><path d="M7 5l12 7-12 7V5z"/></svg>'
+  : '<svg viewBox="0 0 24 24"><rect x="6" y="5" width="4" height="14"/><rect x="14" y="5" width="4" height="14"/></svg>'; }
+function npSet(){ document.getElementById('npTitle').textContent=tracks[ti][0]; document.getElementById('npArtist').textContent=tracks[ti][1]; }
+function npNext(){ ti=(ti+1)%tracks.length; npSet(); }
+function npPrev(){ ti=(ti-1+tracks.length)%tracks.length; npSet(); }
+let npw=38; setInterval(()=>{ if(playing){ npw=(npw+0.4)%100; document.getElementById('npBar').style.width=npw+'%'; } },120);
+
+/* ---------------- windows ---------------- */
+function mkWin(id,title,x,y,w,html,tool){
+  const ex=document.getElementById('win-'+id); if(ex){ ex.classList.remove('min'); ex.style.visibility=''; focusWin(ex); return; }
+  const el=document.createElement('div'); el.className='window'; el.id='win-'+id; el.style.left=x+'px'; el.style.top=y+'px';
+  if(w)el.style.width=w+'px'; el.style.zIndex=++z;
+  el.innerHTML='<div class="titlebar"><span class="tl"><i class="r" title="Close" onclick="closeWin(\''+id+'\')"></i><i class="y" title="Minimize" onclick="minimizeWin(\''+id+'\')"></i><i class="g" title="Zoom" onclick="zoomWin(\''+id+'\')"></i></span><span class="title">'+title+'</span></div><div class="wbody">'+html+'</div>'
+    +'<div class="rsz n"></div><div class="rsz s"></div><div class="rsz e"></div><div class="rsz w"></div><div class="rsz ne"></div><div class="rsz nw"></div><div class="rsz se"></div><div class="rsz sw"></div>';
+  document.getElementById('desk').appendChild(el);
+  dragify(el); resizify(el); focusWin(el);
+  if(id==='term') initTerm(el);
+  const di=document.getElementById('dock-'+id); if(di)di.classList.add('running');
+}
+function closeWin(id){ const el=document.getElementById('win-'+id); if(!el)return; el.classList.add('closing');
+  setTimeout(()=>el.remove(),180); const di=document.getElementById('dock-'+id); if(di)di.classList.remove('running'); }
+/* yellow: minimize (hide; click its dock icon to bring it back) */
+function minimizeWin(id){ const el=document.getElementById('win-'+id); if(!el)return;
+  el.classList.add('min'); setTimeout(()=>{ if(el.classList.contains('min')) el.style.visibility='hidden'; },200); }
+/* green: zoom — fill the workspace, click again to restore */
+function zoomWin(id){ const el=document.getElementById('win-'+id); if(!el)return; focusWin(el);
+  if(el.dataset.maxed){ const r=JSON.parse(el.dataset.rect);
+    el.style.left=r.left; el.style.top=r.top; el.style.width=r.width; el.style.height=r.height;
+    delete el.dataset.maxed; delete el.dataset.rect; }
+  else{ el.dataset.rect=JSON.stringify({left:el.style.left,top:el.style.top,
+      width:(el.style.width||el.offsetWidth+'px'),height:(el.style.height||'')});
+    el.dataset.maxed='1';
+    el.style.left='8px'; el.style.top='34px';
+    el.style.width=(window.innerWidth-16)+'px'; el.style.height=(window.innerHeight-34-72)+'px'; } }
+function focusWin(el){ el.style.zIndex=++z; }
+function dragify(el){ const tb=el.querySelector('.titlebar'); let sx,sy,ox,oy,drag=false;
+  el.addEventListener('mousedown',()=>focusWin(el));
+  tb.addEventListener('mousedown',e=>{ if(e.target.closest('.tl'))return; drag=true; sx=e.clientX; sy=e.clientY;
+    ox=el.offsetLeft; oy=el.offsetTop; e.preventDefault(); });
+  window.addEventListener('mousemove',e=>{ if(!drag)return; el.style.left=Math.max(0,ox+e.clientX-sx)+'px';
+    el.style.top=Math.max(30,oy+e.clientY-sy)+'px'; });
+  window.addEventListener('mouseup',()=>drag=false);
+}
+function resizify(el){
+  el.querySelectorAll('.rsz').forEach(h=>{
+    h.addEventListener('mousedown',e=>{
+      e.preventDefault(); e.stopPropagation(); focusWin(el);
+      if(el.dataset.maxed){ delete el.dataset.maxed; delete el.dataset.rect; }
+      const dir=h.className.replace('rsz','').trim();
+      const sx=e.clientX, sy=e.clientY;
+      const r={l:el.offsetLeft,t:el.offsetTop,w:el.offsetWidth,h:el.offsetHeight};
+      const minW=250, minH=150;
+      function mm(ev){ let dx=ev.clientX-sx, dy=ev.clientY-sy, w=r.w,hh=r.h,l=r.l,t=r.t;
+        if(dir.includes('e')) w=Math.max(minW,r.w+dx);
+        if(dir.includes('s')) hh=Math.max(minH,r.h+dy);
+        if(dir.includes('w')){ w=Math.max(minW,r.w-dx); l=r.l+(r.w-w); }
+        if(dir.includes('n')){ hh=Math.max(minH,r.h-dy); t=Math.max(30,r.t+(r.h-hh)); }
+        el.style.width=w+'px'; el.style.height=hh+'px'; el.style.left=l+'px'; el.style.top=t+'px'; }
+      function mu(){ window.removeEventListener('mousemove',mm); window.removeEventListener('mouseup',mu); }
+      window.addEventListener('mousemove',mm); window.addEventListener('mouseup',mu);
+    });
+  });
+}
+
+/* ---------------- window contents ---------------- */
+const C = {
+  security:()=>`<div class="split sc"><div class="side">
+      <div class="grp">Overview</div>
+      <div class="it sel"><svg viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/></svg>Status</div>
+      <div class="grp">Checks</div>
+      <div class="it"><svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="14" rx="2"/><path d="M4 10h16"/></svg>Firewall</div>
+      <div class="it"><svg viewBox="0 0 24 24"><path d="M12 3l7 4v5c0 4-3 6-7 7-4-1-7-3-7-7V7z"/></svg>Hardening</div>
+      <div class="it"><svg viewBox="0 0 24 24"><path d="M6 10V7a6 6 0 0 1 12 0v3M5 10h14v9H5z"/></svg>Encryption</div>
+      <div class="it"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h10"/></svg>Updates</div>
+    </div><div class="main">
+      <div class="score"><div class="ring"><b>78</b></div><div><div style="font-weight:800;font-size:16px">Everyday profile</div><div class="sub">4 of 5 checks healthy · verified just now</div></div></div>
+      <div class="line"><div><div class="nm">Firewall (nftables)</div><div class="sub">default-deny inbound, stateful</div></div><span class="pill ok" data-scfw>Protected</span></div>
+      <div class="line"><div><div class="nm">SSH exposure</div><div class="sub">no listening service</div></div><span class="pill ok">Disabled</span></div>
+      <div class="line"><div><div class="nm">Disk encryption</div><div class="sub">LUKS2 available, not set up</div></div><span class="pill na">Not configured</span></div>
+      <div class="line"><div><div class="nm">Automatic updates</div><div class="sub">last checked 6 days ago</div></div><span class="pill warn">Attention</span></div>
+    </div></div>`,
+  lab:()=>`<div style="padding:18px;width:360px" class="lab">
+      <div class="top"><span class="st" data-labst>SAFE</span><span class="switch" onclick="toggleArm()"></span></div>
+      <div class="scopebar"><div><div class="in">SECURITY RESEARCH · scope: 10.0.0.0/24 (authorized lab)</div></div></div>
+      <div class="fwline" data-fw>Firewall: <b>everyday profile</b></div>
+      <div class="sub" style="color:#8a93a0;font-size:12px;margin-top:12px;line-height:1.5">Arming loads the research firewall profile, reveals the engagement scope banner, and lights the toolkit in the dock. Disarm returns a clean daily driver. ARMED only shows when the firewall actually applies.</div>
+    </div>`,
+  term:()=>`<div class="term" style="width:500px"><div class="out" id="termOut"><div class="c"># AETHER OS terminal — type a command. Try: help</div></div>
+    <div class="inline"><span class="p">aether@aether</span><span class="c">:~$</span><input id="termIn" autocomplete="off" autocapitalize="off" spellcheck="false"></div></div>`,
+  files:()=>`<div class="split"><div class="side">
+      <div class="grp">Favorites</div>
+      <div class="it sel"><svg viewBox="0 0 24 24"><path d="M3 9l9-6 9 6v10a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>Home</div>
+      <div class="it"><svg viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="14" rx="2"/></svg>Findings</div>
+      <div class="it"><svg viewBox="0 0 24 24"><path d="M4 7h16v12H4z"/><path d="M4 7l2-3h5l2 3"/></svg>Captures</div>
+      <div class="grp">AETHER</div>
+      <div class="it"><svg viewBox="0 0 24 24"><path d="M9 3h6M10 3v5l-5 9a2 2 0 0 0 2 3h10a2 2 0 0 0 2-3l-5-9V3"/></svg>Lab profiles</div>
+    </div><div class="main"><div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;text-align:center;font-size:12px;color:#374151">
+      ${['finding-01.png','finding-02.png','scan.txt','nmap.out','pcap-01.pcapng','notes.md','scope.json','report.pdf'].map(f=>`<div><div style="width:52px;height:52px;margin:0 auto 6px;border-radius:9px;background:linear-gradient(135deg,#eef1f6,#dfe4ec);display:grid;place-items:center"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#8a93a0" stroke-width="1.6"><path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4"/></svg></div>${f}</div>`).join('')}
+    </div></div></div>`,
+  mon:()=>`<div style="padding:18px;width:340px" class="mon">
+      <div class="lab"><span>CPU · Cortex-A72 ×4</span><span>6%</span></div><div class="bar"><i style="width:6%"></i></div>
+      <div class="lab"><span>Memory · 4 GB</span><span>31%</span></div><div class="bar"><i style="width:31%"></i></div>
+      <div class="lab"><span>Temperature</span><span>48°C</span></div><div class="bar"><i style="width:40%"></i></div>
+      <div class="lab"><span>Storage · USB SSD</span><span>18%</span></div><div class="bar"><i style="width:18%"></i></div>
+      <div class="sub" style="color:#8a93a0;font-size:12px;margin-top:8px">Low-overhead /proc + hwmon polling · no root</div>
+    </div>`,
+};
+
+/* ---------------- apps (dock + launchpad) ---------------- */
+const APPS=[
+  {id:'security',name:'Security Center',grad:1,icon:'<path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/>'},
+  {id:'lab',name:'Lab Mode',grad:6,icon:'<path d="M9 3h6M10 3v5l-5 9a2 2 0 0 0 2 3h10a2 2 0 0 0 2-3l-5-9V3"/>'},
+  {id:'term',name:'Terminal',grad:3,icon:'<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 9l3 3-3 3M12 15h5"/>'},
+  {id:'files',name:'Files',grad:7,icon:'<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>'},
+  {id:'mon',name:'System Monitor',grad:5,icon:'<path d="M4 14l4-4 4 3 4-6 4 5"/>'},
+  {id:'settings',name:'Settings',grad:2,icon:'<circle cx="12" cy="12" r="3.2"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1"/>',win:'mon'},
+];
+const TOOLS=[
+  {id:'nmap',name:'Nmap',icon:'<circle cx="12" cy="12" r="8"/><path d="M4 12h16M12 4c3 3 3 13 0 16M12 4c-3 3-3 13 0 16"/>'},
+  {id:'wire',name:'Wireshark',icon:'<path d="M3 12h3l2 6 4-14 2 10 2-4h5"/>'},
+  {id:'air',name:'Aircrack-ng',icon:'<path d="M12 20v-6M8.5 13.5a5 5 0 0 1 7 0M5.5 10.5a9 9 0 0 1 13 0"/>'},
+  {id:'john',name:'John',icon:'<circle cx="9" cy="12" r="4"/><path d="M13 12h8M17 12v4M21 12v3"/>'},
+];
+function openApp(a){ const fn=C[a.win||a.id]; if(fn){ mkWin(a.id,a.name,120+Math.random()*120,70+Math.random()*60,0,fn()); } togglePadClose(); }
+
+/* dock */
+const dock=document.getElementById('dock');
+function dockItem(a,cls){ const g='app-grad-'+(a.grad||1);
+  return `<div class="di ${cls||''}" id="dock-${a.id}" onclick='openApp(${JSON.stringify(a)})'>
+    <div class="tile ${cls==='tool'?'app-grad-3':g}"><svg viewBox="0 0 24 24">${a.icon}</svg></div>
+    <span class="run"></span><span class="tip">${a.name}</span></div>`; }
+dock.innerHTML = APPS.map(a=>dockItem(a)).join('')
+  + '<span class="sep"></span>'
+  + TOOLS.map(a=>dockItem(Object.assign({grad:3,win:'term'},a),'tool')).join('')
+  + '<span class="sep"></span>'
+  + `<div class="di" onclick="togglePad()"><div class="tile" style="background:linear-gradient(135deg,#8a93a0,#525a68)"><svg viewBox="0 0 24 24" stroke="#fff"><rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/></svg></div><span class="tip">Launchpad</span></div>`;
+
+/* launchpad */
+const padGrid=document.getElementById('padGrid');
+padGrid.innerHTML=[...APPS,...TOOLS.map(t=>Object.assign({grad:3,win:'term'},t))].map(a=>
+  `<div class="papp" onclick='openApp(${JSON.stringify(a)})'><div class="tile app-grad-${a.grad||1}"><svg viewBox="0 0 24 24">${a.icon}</svg></div><div class="nm">${a.name}</div></div>`).join('');
+function togglePad(){ document.getElementById('pad').classList.toggle('open'); }
+function togglePadClose(){ document.getElementById('pad').classList.remove('open'); }
+
+/* open a couple of windows on load so it feels alive */
+window.addEventListener('load',()=>{
+  mkWin('security','Security Center',70,70,0,C.security());
+  mkWin('lab','Lab Mode',560,120,0,C.lab());
+  mkWin('term','Terminal',330,360,0,C.term());
+});
+</script>
+</body>
+</html>

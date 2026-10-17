@@ -1,4 +1,6 @@
-# labwc autostart (/etc/xdg/labwc/autostart). v0.1 base: just prove the desktop
-# comes up. Theming (waybar config, GTK theme, dock) lands in the design tasks.
+# labwc autostart (/etc/xdg/labwc/autostart).
 waybar &
+mako &
+# clipboard history: cliphist stores every copy; Super+V lists them (see rc.xml)
+wl-paste --watch cliphist store &
 foot &

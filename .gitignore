@@ -9,3 +9,7 @@ build/work/
 # python bytecode
 __pycache__/
 *.pyc
+
+# generated analysis / local-only assets
+graphify-out/
+docs/preview/*.jpg
