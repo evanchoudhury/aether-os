@@ -7,6 +7,21 @@ profile, tool group, scope banner) with a cinematic transition.
 
 Open source. Design and plan: [docs/designs/aether-os.md](docs/designs/aether-os.md).
 
+## Watch
+
+<p align="center">
+  <a href="https://github.com/evanchoudhury/aether-os/releases/download/v0.1.0/aether-os-trailer.mp4">
+    <img src="docs/media/trailer-poster.jpg" width="820" alt="AETHER OS — click to watch the launch trailer">
+  </a>
+</p>
+
+<p align="center">
+  ▶ <a href="https://github.com/evanchoudhury/aether-os/releases/download/v0.1.0/aether-os-trailer.mp4"><b>Launch trailer</b></a>
+  &nbsp;·&nbsp;
+  <a href="https://github.com/evanchoudhury/aether-os/releases/download/v0.1.0/aether-os-launch.mp4">Polished cut</a>
+  &nbsp;(click to play)
+</p>
+
 ## Status
 
 **v0.1 — image builds.** Produces a flashable, 64-bit **arm64** Raspberry Pi OS
