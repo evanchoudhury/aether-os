@@ -36,6 +36,20 @@ parsed. It calls `pkexec /usr/libexec/aether/lab-{arm,disarm}` — fixed,
 no user input reaches a root shell. The VPN endpoint read from the config is
 validated to digits-and-dots before it is used.
 
+## Tor Browser (recommended) is a one-command opt-in
+
+Tor Browser gives the best anti-fingerprinting, but its launcher lives in Debian
+`contrib`, so it isn't preinstalled. Add it once (needs network):
+
+```
+sudo sed -i 's/ main/ main contrib/' /etc/apt/sources.list.d/debian.sources
+sudo apt update && sudo apt install -y torbrowser-launcher
+```
+
+Until then, the **Anonymous Browser** routes a normal browser through Tor with
+`torsocks` — traffic still goes through Tor (and the kill-switch forces it to),
+but with weaker fingerprint protection than Tor Browser.
+
 ## Honest limits — read this
 
 - **This is strong anonymity, not "untraceable."** Tor + VPN hides your IP and

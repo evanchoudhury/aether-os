@@ -55,7 +55,8 @@ i2c-tools
 # backup / recovery
 timeshift
 # privacy / Lab Mode anonymity (Tor + VPN kill-switch)
+# (torbrowser-launcher lives in Debian 'contrib' — not preinstalled to keep the
+#  build on main-only; it's a one-command opt-in, see docs/PRIVACY.md)
 tor
 torsocks
-torbrowser-launcher
 wireguard-tools
