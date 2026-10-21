@@ -1,0 +1,25 @@
+# AETHER VPN slot — WireGuard config (VPN -> Tor when Lab Mode is ARMED).
+#
+# To enable the VPN layer: copy a WireGuard config from your provider
+# (Mullvad / IVPN / ProtonVPN / your own server) to:
+#     /etc/aether/vpn/aether.conf
+# Lab Mode ARM then brings it up before Tor, so your traffic is VPN -> Tor, and
+# the kill-switch blocks everything that isn't the VPN handshake, the tunnel, or
+# Tor — if either drops, nothing leaks.
+#
+# IMPORTANT: the Endpoint MUST be a numeric IP:port (not a hostname). The
+# kill-switch blocks direct DNS, so a hostname endpoint can't be resolved, and a
+# numeric endpoint is also what lets lab-arm safely allow the handshake.
+#
+# Example (replace every value with your provider's):
+[Interface]
+PrivateKey = <your-private-key>
+Address = 10.2.0.2/32
+# Keep DNS pointed at the VPN or a privacy resolver; Tor still does app DNS.
+DNS = 10.2.0.1
+
+[Peer]
+PublicKey = <provider-public-key>
+Endpoint = 203.0.113.10:51820        # numeric IP:port only
+AllowedIPs = 0.0.0.0/0, ::/0
+PersistentKeepalive = 25

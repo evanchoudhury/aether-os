@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Anonymous Browser
+Comment=Browse anonymously over Tor (.onion included) — requires Lab Mode ARMED
+Exec=aether-anon-browser
+Icon=tor-browser
+Terminal=false
+Categories=Network;WebBrowser;Security;
+Keywords=tor;onion;anonymous;darkweb;privacy;

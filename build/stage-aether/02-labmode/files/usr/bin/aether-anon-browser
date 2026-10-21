@@ -1,0 +1,27 @@
+#!/bin/bash
+# AETHER Anonymous Browser. Launches Tor Browser (anti-fingerprinting), routed
+# through the Tor that Lab Mode brought up. Refuses to open in SAFE mode — the
+# dark web / anonymous web is an ARMED-only capability. [STATUS: UNTESTED]
+set -euo pipefail
+
+notify() { command -v notify-send >/dev/null 2>&1 && notify-send "Anonymous Browser" "$1" || true; }
+
+if [ "$(cat /run/aether/labmode 2>/dev/null || echo safe)" != armed ]; then
+  notify "Lab Mode is SAFE. Arm the box (Control Center → Lab Mode) to browse anonymously."
+  echo "aether: SAFE mode — arm Lab Mode first" >&2
+  exit 1
+fi
+
+# Give Tor a moment if it is still bootstrapping.
+if [ "$(aether-labmode tor-ready)" != yes ]; then
+  notify "Waiting for Tor to bootstrap…"
+  for i in $(seq 1 30); do [ "$(aether-labmode tor-ready)" = yes ] && break; sleep 1; done
+fi
+
+if command -v torbrowser-launcher >/dev/null 2>&1; then
+  exec torbrowser-launcher
+else
+  # Fallback: a browser forced through Tor's SOCKS (less fingerprint protection).
+  notify "Tor Browser not installed — using a torsocks browser (weaker protection)."
+  exec torsocks x-www-browser "https://check.torproject.org"
+fi

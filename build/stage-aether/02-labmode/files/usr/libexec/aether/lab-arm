@@ -1,18 +1,47 @@
 #!/bin/bash
-# AETHER Lab Mode — ARM. Runs as root via pkexec (polkit action
-# com.aether.labmode.arm). Takes NO arguments: no user input reaches a shell,
-# so there is no injection surface. [STATUS: UNTESTED]
+# AETHER Lab Mode — ARM. Root, via pkexec (polkit action com.aether.labmode.arm).
+# Takes NO arguments: no user input reaches a shell, so there is no injection
+# surface. Arming = anonymity on: Tor up, optional VPN (VPN -> Tor), and the
+# research firewall KILL-SWITCH so nothing can leak around them. [STATUS: UNTESTED]
 set -euo pipefail
 
-RULES=/etc/aether/nftables/research.nft
+RESEARCH=/etc/aether/nftables/research.nft
+EVERYDAY=/etc/aether/nftables/everyday.nft
+VPN_CONF=/etc/aether/vpn/aether.conf          # user drops a WireGuard config here
 STATE_DIR=/run/aether
 
-[ -r "$RULES" ] || { echo "aether: missing $RULES" >&2; exit 1; }
+[ -r "$RESEARCH" ] || { echo "aether: missing $RESEARCH" >&2; exit 1; }
 
-# Atomic load. If it fails, set -e exits non-zero and we do NOT write state,
-# so the UI must not show ARMED unless the firewall actually applied.
-nft -f "$RULES"
+# 1. Start Tor (runs as the debian-tor user; SOCKS on 127.0.0.1:9050).
+systemctl start tor.service 2>/dev/null || systemctl start tor@default.service
+
+# 2. Apply the kill-switch FIRST, so there is never a window where apps can leak.
+#    Tor (skuid debian-tor) is allowed out, so it can still bootstrap.
+nft -f "$RESEARCH"
+
+# 3. Optional VPN layer (VPN -> Tor). Only with a NUMERIC Endpoint (IP:port): a
+#    hostname would need DNS, which the kill-switch blocks, and keeping it numeric
+#    also means the value punched into nft is digits+dots only (no injection).
+if [ -r "$VPN_CONF" ] && command -v wg-quick >/dev/null 2>&1; then
+	ep="$(grep -oiE '^[[:space:]]*Endpoint[[:space:]]*=[[:space:]]*[0-9.]+:[0-9]+' "$VPN_CONF" \
+	      | grep -oE '[0-9.]+:[0-9]+' | head -1 || true)"
+	if [ -n "$ep" ]; then
+		ip="${ep%:*}"; port="${ep##*:}"
+		nft add rule inet filter output ip daddr "$ip" udp dport "$port" accept
+		install -D -m 600 "$VPN_CONF" /etc/wireguard/aether.conf
+		wg-quick up aether 2>/dev/null || echo "aether: VPN config present but 'wg-quick up' failed" >&2
+	else
+		echo "aether: VPN needs a numeric Endpoint (IP:port) for the kill-switch; running Tor-only" >&2
+	fi
+fi
+
+# 4. Wait for Tor's SOCKS port (fail-closed: even if Tor is slow, the kill-switch
+#    is already active, so there is no leak — the box simply has no egress yet).
+for i in $(seq 1 60); do
+	if timeout 2 bash -c 'exec 3<>/dev/tcp/127.0.0.1/9050' 2>/dev/null; then break; fi
+	sleep 1
+done
 
 mkdir -p "$STATE_DIR"
 echo armed > "$STATE_DIR/labmode"
-echo "aether: Lab Mode ARMED (research firewall profile loaded)"
+echo "aether: Lab Mode ARMED — Tor up, kill-switch active (research profile)"

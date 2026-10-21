@@ -54,3 +54,8 @@ lm-sensors
 i2c-tools
 # backup / recovery
 timeshift
+# privacy / Lab Mode anonymity (Tor + VPN kill-switch)
+tor
+torsocks
+torbrowser-launcher
+wireguard-tools

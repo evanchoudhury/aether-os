@@ -2,8 +2,11 @@
 
 A premium, macOS-inspired, security-hardened Linux desktop for the Raspberry Pi 4
 — the beautiful, discoverable pentest box for people learning offensive security.
-Signature feature: **Lab Mode**, a single toggle that arms the box (firewall
-profile, tool group, scope banner) with a cinematic transition.
+Signature feature: **Lab Mode**, a single toggle that arms the box — firewall
+profile, tool group, scope banner, and **anonymity**: Tor + an optional VPN with
+an nftables egress **kill-switch**, plus a Tor Browser for `.onion`. SAFE is a
+normal daily driver; ARMED is an anonymized research machine. See
+[docs/PRIVACY.md](docs/PRIVACY.md) (and its honest "not untraceable" caveats).
 
 Open source. Design and plan: [docs/designs/aether-os.md](docs/designs/aether-os.md).
 

@@ -15,6 +15,9 @@
     <item label="Lab Mode">
       <action name="Execute"><command>aether-labmode-panel</command></action>
     </item>
+    <item label="Anonymous Browser (Tor)">
+      <action name="Execute"><command>aether-anon-browser</command></action>
+    </item>
     <item label="Capture Finding">
       <action name="Execute"><command>aether-capture</command></action>
     </item>

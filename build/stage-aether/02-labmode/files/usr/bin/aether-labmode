@@ -1,12 +1,14 @@
 #!/bin/bash
 # AETHER Lab Mode control (unprivileged). This is the ONLY place a Lab Mode
 # argument is parsed; the privileged scripts it calls take no arguments.
-# The GTK/Qt panel will call this same CLI. [STATUS: UNTESTED]
+# The GTK panel / Control Center call this same CLI. [STATUS: UNTESTED]
 set -euo pipefail
 
 case "${1:-status}" in
-  arm)    exec pkexec /usr/libexec/aether/lab-arm ;;
-  disarm) exec pkexec /usr/libexec/aether/lab-disarm ;;
-  status) cat /run/aether/labmode 2>/dev/null || echo safe ;;
-  *) echo "usage: aether-labmode {arm|disarm|status}" >&2; exit 2 ;;
+  arm)       exec pkexec /usr/libexec/aether/lab-arm ;;
+  disarm)    exec pkexec /usr/libexec/aether/lab-disarm ;;
+  status)    cat /run/aether/labmode 2>/dev/null || echo safe ;;
+  tor-ready) timeout 2 bash -c 'exec 3<>/dev/tcp/127.0.0.1/9050' 2>/dev/null && echo yes || echo no ;;
+  vpn-status) if ip link show aether >/dev/null 2>&1; then echo up; else echo down; fi ;;
+  *) echo "usage: aether-labmode {arm|disarm|status|tor-ready|vpn-status}" >&2; exit 2 ;;
 esac

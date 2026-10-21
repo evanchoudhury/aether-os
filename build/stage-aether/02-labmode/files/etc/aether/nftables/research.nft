@@ -1,8 +1,16 @@
 #!/usr/sbin/nft -f
-# AETHER research (Lab Mode armed) firewall profile. Still default-deny inbound:
-# arming the toolkit must NOT open the host up. v0.1 differs from everyday only
-# by the marker chain; later profiles may allow specific tool traffic, each
-# change reviewed. Loaded by lab-arm.
+# AETHER research (Lab Mode ARMED) firewall profile — PRIVACY KILL-SWITCH.
+#
+# Inbound stays default-deny (arming the toolkit must never open the host up).
+# Outbound is default-DROP: the ONLY things allowed to leave the box are
+#   - loopback            (apps reach Tor's SOCKS on 127.0.0.1:9050)
+#   - the Tor daemon      (meta skuid "debian-tor": only Tor talks to the network)
+#   - an active WireGuard tunnel ("aether"), when a VPN is configured
+#   - the WireGuard handshake to the VPN endpoint — added at arm time by lab-arm
+#     after it validates a NUMERIC Endpoint (IP:port) from the VPN config
+# Everything else — ordinary apps, and any direct DNS — is DROPPED. So if Tor or
+# the VPN drops, traffic does not fall back to the clear: it simply stops. No leak.
+# Loaded by /usr/libexec/aether/lab-arm (root, via pkexec).
 flush ruleset
 
 table inet filter {
@@ -17,5 +25,13 @@ table inet filter {
 		ip6 nexthdr ipv6-icmp accept
 	}
 	chain forward { type filter hook forward priority filter; policy drop; }
-	chain output { type filter hook output priority filter; policy accept; }
+
+	chain output {
+		type filter hook output priority filter; policy drop;   # kill-switch
+		oif "lo" accept
+		ct state established,related accept
+		meta skuid "debian-tor" accept        # only Tor egresses to the network
+		oifname "aether" accept               # traffic inside the WireGuard tunnel
+		# WireGuard handshake to the endpoint is inserted here by lab-arm.
+	}
 }

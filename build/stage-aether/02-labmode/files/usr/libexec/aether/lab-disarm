@@ -1,17 +1,26 @@
 #!/bin/bash
-# AETHER Lab Mode — DISARM. Runs as root via pkexec (polkit action
-# com.aether.labmode.disarm). Takes NO arguments. Fully reverts to the everyday
-# firewall profile — a disarm that doesn't revert is worse than never arming.
-# [STATUS: UNTESTED]
+# AETHER Lab Mode — DISARM. Root, via pkexec (polkit action com.aether.labmode.disarm).
+# Takes NO arguments. Fully reverts: everyday firewall restored, VPN down, Tor
+# stopped. A disarm that half-reverts is worse than never arming. [STATUS: UNTESTED]
 set -euo pipefail
 
-RULES=/etc/aether/nftables/everyday.nft
+EVERYDAY=/etc/aether/nftables/everyday.nft
 STATE_DIR=/run/aether
 
-[ -r "$RULES" ] || { echo "aether: missing $RULES" >&2; exit 1; }
+[ -r "$EVERYDAY" ] || { echo "aether: missing $EVERYDAY" >&2; exit 1; }
 
-nft -f "$RULES"
+# 1. Restore the everyday profile first (opens normal egress back up).
+nft -f "$EVERYDAY"
+
+# 2. Bring the VPN tunnel down if it is up.
+if command -v wg-quick >/dev/null 2>&1 && ip link show aether >/dev/null 2>&1; then
+	wg-quick down aether 2>/dev/null || true
+fi
+rm -f /etc/wireguard/aether.conf 2>/dev/null || true
+
+# 3. Stop Tor — in SAFE mode there is no anonymizer and no .onion reach.
+systemctl stop tor.service 2>/dev/null || systemctl stop tor@default.service 2>/dev/null || true
 
 mkdir -p "$STATE_DIR"
 echo safe > "$STATE_DIR/labmode"
-echo "aether: Lab Mode disarmed (everyday firewall profile restored)"
+echo "aether: Lab Mode disarmed — Tor stopped, VPN down, everyday profile restored"
