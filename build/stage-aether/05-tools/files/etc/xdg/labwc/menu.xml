@@ -15,6 +15,21 @@
     <item label="App Launcher">
       <action name="Execute"><command>fuzzel</command></action>
     </item>
+    <item label="Tool Store (add tools)">
+      <action name="Execute"><command>aether-store</command></action>
+    </item>
+    <item label="Notification Center">
+      <action name="Execute"><command>aether-noticenter</command></action>
+    </item>
+    <item label="Assistant (tool help)">
+      <action name="Execute"><command>aether-assistant</command></action>
+    </item>
+    <item label="Guided Labs (practice safely)">
+      <action name="Execute"><command>aether-labs</command></action>
+    </item>
+    <item label="Engagement Scope (authorized targets)">
+      <action name="Execute"><command>aether-scope-panel</command></action>
+    </item>
     <item label="Lab Mode">
       <action name="Execute"><command>aether-labmode-panel</command></action>
     </item>
@@ -23,6 +38,9 @@
     </item>
     <item label="Capture Finding">
       <action name="Execute"><command>aether-capture</command></action>
+    </item>
+    <item label="Generate Report">
+      <action name="Execute"><command>aether-report</command></action>
     </item>
     <separator/>
     <menu id="aether-apps-menu" label="Applications">
@@ -51,6 +69,9 @@
       </item>
       <item label="Audio Settings">
         <action name="Execute"><command>pavucontrol</command></action>
+      </item>
+      <item label="Night Light (toggle)">
+        <action name="Execute"><command>aether-nightlight toggle</command></action>
       </item>
       <item label="Network Settings">
         <action name="Execute"><command>nm-connection-editor</command></action>

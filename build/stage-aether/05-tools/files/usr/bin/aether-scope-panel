@@ -1,0 +1,116 @@
+#!/usr/bin/env python3
+# AETHER Engagement Scope — a panel over the aether-scope engine. See and edit
+# the targets you're authorized to test, and check one before you fire a tool.
+# Honest guard, not unbreakable enforcement. (GTK4 + libadwaita)
+import gi, subprocess, shutil
+gi.require_version("Gtk","4.0"); gi.require_version("Adw","1")
+from gi.repository import Gtk, Adw, Gio, Gdk, GLib
+
+SCOPE = shutil.which("aether-scope") or "/usr/bin/aether-scope"
+
+CSS="""
+window { background: rgba(14,17,22,0.93); border-radius: 18px; }
+.sc-root { padding: 16px; }
+.sc-title { font-weight:800; font-size:18px; color:#E6EAF0; }
+.sc-note { color:#D29922; font-size:12px; }
+.sc-label { color:#9AA4B2; font-size:10px; font-weight:800; letter-spacing:0.6px; }
+.erow { background: rgba(255,255,255,0.06); border-radius:11px; padding:7px 12px;
+        border:1px solid rgba(255,255,255,0.06); }
+.ent { color:#E6EAF0; font-family:'JetBrains Mono',monospace; font-size:13px; }
+.tag { color:#9AA4B2; font-size:10px; font-weight:700; }
+.rm { background: rgba(248,81,73,0.20); color:#E6EAF0; border-radius:8px; padding:2px 10px;
+      font-weight:700; font-size:11px; min-height:0; }
+.rm:hover { background: rgba(248,81,73,0.4); }
+.fld { background: rgba(0,0,0,0.35); border-radius:10px; color:#E6EAF0; }
+.go { background:#35D0BA; color:#0E1116; border-radius:10px; padding:6px 14px; font-weight:800; min-height:0; }
+.result-in  { color:#35D0BA; font-size:13px; font-weight:700; }
+.result-out { color:#F85149; font-size:13px; font-weight:700; }
+"""
+
+def run(*args):
+    try: return subprocess.run([SCOPE, *args], capture_output=True, text=True, timeout=5)
+    except Exception: return None
+
+class Scope(Adw.Application):
+    def __init__(s):
+        super().__init__(application_id="com.aether.scope",
+                         flags=Gio.ApplicationFlags.NON_UNIQUE)
+
+    def do_activate(s):
+        p=Gtk.CssProvider(); p.load_from_data(CSS.encode())
+        Gtk.StyleContext.add_provider_for_display(Gdk.Display.get_default(),p,Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
+        w=Adw.ApplicationWindow(application=s, title="Engagement Scope",
+                                default_width=520, default_height=600)
+        w.set_resizable(False); s.win=w
+        root=Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10); root.add_css_class("sc-root")
+        root.append(Gtk.Label(label="Engagement Scope", xalign=0, css_classes=["sc-title"]))
+        root.append(Gtk.Label(label="Targets you are authorized to test. A guard warns before a tool hits anything else — you stay responsible for staying in scope and in the law.",
+                              xalign=0, wrap=True, css_classes=["sc-note"]))
+        # add row
+        root.append(Gtk.Label(label="ADD TARGET (ip · cidr · host)", xalign=0, css_classes=["sc-label"]))
+        addr=Gtk.Box(spacing=8)
+        s.addf=Gtk.Entry(); s.addf.add_css_class("fld"); s.addf.set_hexpand(True)
+        s.addf.set_placeholder_text("10.0.0.0/24  or  target.example.com")
+        s.addf.connect("activate", s._add)
+        ab=Gtk.Button(label="Add"); ab.add_css_class("go"); ab.connect("clicked", s._add)
+        addr.append(s.addf); addr.append(ab); root.append(addr)
+        # list
+        root.append(Gtk.Label(label="IN SCOPE", xalign=0, css_classes=["sc-label"]))
+        sc=Gtk.ScrolledWindow(vexpand=True); sc.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
+        s.list=Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=7)
+        sc.set_child(s.list); root.append(sc)
+        # check row
+        root.append(Gtk.Label(label="CHECK A TARGET", xalign=0, css_classes=["sc-label"]))
+        chkr=Gtk.Box(spacing=8)
+        s.chkf=Gtk.Entry(); s.chkf.add_css_class("fld"); s.chkf.set_hexpand(True)
+        s.chkf.set_placeholder_text("is this target in scope?")
+        s.chkf.connect("activate", s._check)
+        cb=Gtk.Button(label="Check"); cb.add_css_class("go"); cb.connect("clicked", s._check)
+        chkr.append(s.chkf); chkr.append(cb); root.append(chkr)
+        s.result=Gtk.Label(xalign=0); root.append(s.result)
+        w.set_content(root)
+        k=Gtk.EventControllerKey()
+        k.connect("key-pressed", lambda c,kv,kc,st:(s.quit() or True) if kv==Gdk.KEY_Escape else False)
+        w.add_controller(k)
+        s._refresh(); w.present()
+
+    def _refresh(s):
+        for c in list(s.list): s.list.remove(c)
+        r=run("list")
+        lines=(r.stdout.splitlines() if r and r.stdout else [])
+        any_row=False
+        for ln in lines:
+            t=ln.strip()
+            if not t or "scope is empty" in t: continue
+            default = t.endswith("(default)")
+            name = t.replace("(default)","").strip()
+            s.list.append(s._row(name, default)); any_row=True
+        if not any_row:
+            s.list.append(Gtk.Label(label="No targets yet. Add one above.", xalign=0, css_classes=["sc-note"]))
+
+    def _row(s, name, default):
+        row=Gtk.Box(spacing=8); row.add_css_class("erow")
+        row.append(Gtk.Label(label=name, xalign=0, hexpand=True, css_classes=["ent"]))
+        if default:
+            row.append(Gtk.Label(label="DEFAULT", css_classes=["tag"]))
+        else:
+            b=Gtk.Button(label="Remove"); b.add_css_class("rm")
+            b.connect("clicked", lambda _,t=name:(run("remove", t), s._refresh()))
+            row.append(b)
+        return row
+
+    def _add(s, *a):
+        t=s.addf.get_text().strip()
+        if t: run("add", t); s.addf.set_text(""); s._refresh()
+
+    def _check(s, *a):
+        t=s.chkf.get_text().strip()
+        if not t: return
+        r=run("check", t)
+        ok = r is not None and r.returncode == 0
+        s.result.set_text(("✓  %s is in scope" % t) if ok else ("✗  %s is NOT in scope" % t))
+        for c in ("result-in","result-out"): s.result.remove_css_class(c)
+        s.result.add_css_class("result-in" if ok else "result-out")
+
+if __name__=="__main__":
+    Adw.init(); Scope().run(None)

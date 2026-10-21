@@ -1,0 +1,23 @@
+{
+  "_note": "AETHER Tool Store catalog — vetted extra security tools from Debian's own repos, not preinstalled (zero bloat: add what you need). Edit freely.",
+  "tools": [
+    {"pkg": "gobuster",        "name": "Gobuster",        "cat": "Web & Content Discovery", "desc": "Brute-force directories, DNS subdomains, and vhosts. Fast, written in Go."},
+    {"pkg": "ffuf",            "name": "ffuf",            "cat": "Web & Content Discovery", "desc": "Fast web fuzzer for directories, parameters, and virtual hosts."},
+    {"pkg": "dirb",            "name": "dirb",            "cat": "Web & Content Discovery", "desc": "Classic web content scanner using a wordlist of common paths."},
+    {"pkg": "wfuzz",           "name": "Wfuzz",           "cat": "Web & Content Discovery", "desc": "Fuzz any part of an HTTP request to find hidden content and bugs."},
+    {"pkg": "whatweb",         "name": "WhatWeb",         "cat": "Web & Content Discovery", "desc": "Fingerprint a website: CMS, frameworks, servers, and versions."},
+    {"pkg": "wapiti",          "name": "Wapiti",          "cat": "Web & Content Discovery", "desc": "Black-box web app vulnerability scanner (XSS, SQLi, and more)."},
+    {"pkg": "masscan",         "name": "masscan",         "cat": "Network Scanning",        "desc": "Internet-scale port scanner — extremely fast, asynchronous."},
+    {"pkg": "hping3",          "name": "hping3",          "cat": "Network Scanning",        "desc": "Craft custom TCP/IP packets for scanning, testing, and tracerouting."},
+    {"pkg": "netcat-openbsd",  "name": "netcat (OpenBSD)","cat": "Network Scanning",        "desc": "The TCP/UDP swiss-army knife: connect, listen, transfer, debug."},
+    {"pkg": "socat",           "name": "socat",           "cat": "Network Scanning",        "desc": "Multipurpose relay: sockets, pipes, TLS, port-forwarding."},
+    {"pkg": "proxychains4",    "name": "proxychains-ng",  "cat": "Network Scanning",        "desc": "Force any tool's traffic through a proxy chain (e.g. over Tor)."},
+    {"pkg": "dnsutils",        "name": "dig / DNS utils", "cat": "Recon",                   "desc": "dig, nslookup, and friends for DNS reconnaissance."},
+    {"pkg": "whois",           "name": "whois",           "cat": "Recon",                   "desc": "Look up domain and IP registration details."},
+    {"pkg": "nbtscan",         "name": "nbtscan",         "cat": "Recon",                   "desc": "Scan networks for NetBIOS name information."},
+    {"pkg": "enum4linux",      "name": "enum4linux",      "cat": "Recon",                   "desc": "Enumerate information from Windows and Samba systems."},
+    {"pkg": "hashcat",         "name": "hashcat",         "cat": "Passwords",               "desc": "Advanced password recovery across many hash types."},
+    {"pkg": "medusa",          "name": "Medusa",          "cat": "Passwords",               "desc": "Fast, parallel, modular login brute-forcer."},
+    {"pkg": "macchanger",      "name": "macchanger",      "cat": "Anonymity",               "desc": "View and change a network interface's MAC address."}
+  ]
+}

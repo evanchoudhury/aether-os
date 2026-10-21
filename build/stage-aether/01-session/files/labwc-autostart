@@ -1,6 +1,8 @@
 # labwc autostart (/etc/xdg/labwc/autostart).
 waybar &
 mako &
+# restore Night Light if it was on last session (no-op if off / no gamma)
+aether-nightlight restore &
 # clipboard history: cliphist stores every copy; Super+V lists them (see rc.xml)
 wl-paste --watch cliphist store &
 foot &

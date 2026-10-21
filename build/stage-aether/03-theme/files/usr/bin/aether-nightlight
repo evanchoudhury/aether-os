@@ -1,0 +1,33 @@
+#!/bin/sh
+# AETHER Night Light — warm the screen on a schedule (macOS Night Shift-style),
+# driven by wlsunset. Day is neutral, evenings go warm; toggled by the user,
+# and the choice survives reboot. Needs a wlroots compositor with gamma control
+# (labwc on real hardware) — it has no effect under WSLg, which lacks gamma.
+#
+# Schedule/temps: override by writing KEY=VALUE lines to the config below.
+set -u  # not -e: a missing wlsunset or dead pgrep must not abort the toggle.
+
+CONF="${XDG_CONFIG_HOME:-$HOME/.config}/aether/nightlight.conf"
+STATE="${XDG_STATE_HOME:-$HOME/.local/state}/aether/nightlight.state"
+mkdir -p "$(dirname "$STATE")"
+
+# Defaults (no GPS needed): neutral by day, warm by evening, by the clock.
+DAY_TEMP=6500; NIGHT_TEMP=4000; SUNRISE=06:30; SUNSET=19:00
+[ -f "$CONF" ] && . "$CONF" || true
+
+start() {
+    if ! pgrep -x wlsunset >/dev/null 2>&1; then
+        setsid wlsunset -T "$DAY_TEMP" -t "$NIGHT_TEMP" -S "$SUNRISE" -s "$SUNSET" >/dev/null 2>&1 &
+    fi
+    echo on > "$STATE"
+}
+stop() { pkill -x wlsunset 2>/dev/null || true; echo off > "$STATE"; }
+
+case "${1:-}" in
+    on)      start ;;
+    off)     stop ;;
+    toggle)  if pgrep -x wlsunset >/dev/null 2>&1; then stop; else start; fi ;;
+    status)  pgrep -x wlsunset >/dev/null 2>&1 && echo on || echo off ;;
+    restore) [ "$(cat "$STATE" 2>/dev/null || echo off)" = on ] && start || true ;;
+    *) echo "usage: aether-nightlight {on|off|toggle|status|restore}" >&2; exit 2 ;;
+esac

@@ -17,6 +17,9 @@ font=Inter 12
 icons=1
 max-icon-size=48
 outer-margin=10
+# Keep expired notifications so the Notification Center (aether-noticenter) can show them.
+history=1
+max-history=100
 
 [urgency=high]
 border-color=#D29922

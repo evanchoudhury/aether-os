@@ -1,0 +1,133 @@
+#!/usr/bin/env python3
+# AETHER Engagement Scope — define the targets you're authorized to test, then
+# check a command against them BEFORE you run it. This is a conscious guard, not
+# unbreakable enforcement: it catches the honest mistake of pointing a tool at
+# the wrong host. You stay responsible for staying in scope and in the law.
+#
+#   aether-scope list
+#   aether-scope add 10.0.0.0/24        aether-scope remove 10.0.0.0/24
+#   aether-scope check 10.0.0.5         -> exit 0 in scope, 1 out
+#   aether-scope guard nmap -sV 10.0.0.5  -> checks targets, then runs it
+import sys, os, re, ipaddress
+from urllib.parse import urlparse
+
+SYSTEM = "/etc/aether/scope/targets.conf"
+USER = os.path.join(os.environ.get("XDG_CONFIG_HOME", os.path.expanduser("~/.config")),
+                    "aether", "scope.conf")
+
+def _read(path):
+    try:
+        return [l.strip() for l in open(path) if l.strip() and not l.strip().startswith("#")]
+    except Exception:
+        return []
+
+def entries():
+    seen, out = set(), []
+    for e in _read(SYSTEM) + _read(USER):
+        if e not in seen: seen.add(e); out.append(e)
+    return out
+
+def _net(entry):
+    try: return ipaddress.ip_network(entry, strict=False)
+    except ValueError: return None
+
+def in_scope(target):
+    ip = None
+    try: ip = ipaddress.ip_address(target)
+    except ValueError: pass
+    for e in entries():
+        net = _net(e)
+        if ip is not None and net is not None and ip in net:
+            return True
+        if ip is None and net is None:  # both hostnames
+            if e == target: return True
+            if e.startswith("*.") and (target == e[2:] or target.endswith(e[1:])):
+                return True
+    return False
+
+def add(target):
+    os.makedirs(os.path.dirname(USER), exist_ok=True)
+    cur = _read(USER)
+    if target in cur or target in _read(SYSTEM):
+        print("already in scope:", target); return
+    with open(USER, "a") as f: f.write(target + "\n")
+    print("added:", target)
+
+def remove(target):
+    cur = _read(USER)
+    if target not in cur:
+        print("not in user scope (system defaults can't be removed):", target); return
+    os.makedirs(os.path.dirname(USER), exist_ok=True)
+    with open(USER, "w") as f:
+        for e in cur:
+            if e != target: f.write(e + "\n")
+    print("removed:", target)
+
+def cmd_list():
+    sysents, userents = _read(SYSTEM), _read(USER)
+    if not sysents and not userents:
+        print("scope is empty — add a target with: aether-scope add <ip|cidr|host>"); return
+    for e in sysents: print(" ", e, "(default)")
+    for e in userents:
+        if e not in sysents: print(" ", e)
+
+# --- guard: pull target-looking tokens out of a command and check each ---
+_HOSTRE = re.compile(r"^(?=.*\.)[A-Za-z0-9][A-Za-z0-9.-]*[A-Za-z0-9]$")
+_SKIP_EXT = (".txt", ".lst", ".conf", ".pcap", ".log", ".json", ".xml", ".csv", ".db")
+
+def targets_in(argv):
+    found = []
+    for a in argv:
+        if a.startswith("-"): continue
+        host = None
+        if "://" in a:
+            host = urlparse(a).hostname
+        else:
+            try:
+                ipaddress.ip_address(a); host = a
+            except ValueError:
+                if _HOSTRE.match(a) and not a.lower().endswith(_SKIP_EXT) and not os.path.exists(a):
+                    host = a
+        if host and host not in found:
+            found.append(host)
+    return found
+
+def guard(argv):
+    if not argv:
+        print("usage: aether-scope guard <command> [args...]", file=sys.stderr); return 2
+    cands = targets_in(argv[1:])
+    out = [c for c in cands if not in_scope(c)]
+    if out:
+        sys.stderr.write("\n  OUT OF SCOPE: %s\n" % ", ".join(out))
+        sys.stderr.write("  Your authorized scope: %s\n" % (", ".join(entries()) or "(empty)"))
+        sys.stderr.write("  Testing a target you're not authorized for may be illegal.\n")
+        if sys.stdin.isatty():
+            try: ans = input("  Proceed anyway? [y/N] ").strip().lower()
+            except EOFError: ans = ""
+            if ans != "y":
+                print("  aborted."); return 3
+        else:
+            print("  refused (non-interactive).", file=sys.stderr); return 3
+    try:
+        os.execvp(argv[0], argv)
+    except FileNotFoundError:
+        print("command not found:", argv[0], file=sys.stderr); return 127
+
+def main():
+    if len(sys.argv) < 2:
+        print(__doc__.strip()); return 0
+    c = sys.argv[1]
+    if c == "list": cmd_list()
+    elif c == "add" and len(sys.argv) > 2: add(sys.argv[2])
+    elif c == "remove" and len(sys.argv) > 2: remove(sys.argv[2])
+    elif c == "check" and len(sys.argv) > 2:
+        ok = in_scope(sys.argv[2])
+        print("in scope" if ok else "OUT of scope", ":", sys.argv[2])
+        return 0 if ok else 1
+    elif c == "guard": return guard(sys.argv[2:])
+    else:
+        print(__doc__.strip(), file=sys.stderr); return 2
+    return 0
+
+if __name__ == "__main__":
+    sys.exit(main())

@@ -1,0 +1,105 @@
+#!/usr/bin/env python3
+# AETHER Tool Store — browse vetted extra security tools (from Debian's own
+# repos) and add the ones you need. Nothing is preinstalled (zero bloat) and
+# nothing is installed as root behind your back: "Install" opens a terminal with
+# the command pre-filled, so you review it and sudo authenticates there. This is
+# the same copy-don't-auto-run rule the Assistant and Labs follow. (GTK4 + Adw)
+import gi, os, json, subprocess, shutil
+gi.require_version("Gtk","4.0"); gi.require_version("Adw","1")
+from gi.repository import Gtk, Adw, Gio, Gdk, Pango
+
+CATALOG = ["/usr/share/aether/store/catalog.json",
+           os.path.expanduser("~/.local/share/aether/store/catalog.json")]
+TERM = shutil.which("foot") or "foot"
+
+CSS="""
+window { background: rgba(14,17,22,0.93); border-radius: 18px; }
+.st-root { padding: 16px; }
+.st-title { font-weight:800; font-size:18px; color:#E6EAF0; }
+.st-note { color:#9AA4B2; font-size:12px; }
+.cat { color:#35D0BA; font-size:11px; font-weight:800; letter-spacing:0.6px; margin-top:8px; }
+.tool { background: rgba(255,255,255,0.06); border-radius:13px; padding:11px 14px;
+        border:1px solid rgba(255,255,255,0.06); }
+.t-name { color:#E6EAF0; font-size:14px; font-weight:700; }
+.t-pkg  { color:#9AA4B2; font-size:11px; font-family:'JetBrains Mono',monospace; }
+.t-desc { color:#C7CED8; font-size:12px; }
+.inst { background:#35D0BA; color:#0E1116; border-radius:10px; padding:5px 14px; font-weight:800; min-height:0; }
+.inst:hover { background:#2fbfab; }
+.done { color:#35D0BA; font-size:12px; font-weight:800; }
+"""
+
+def load():
+    for p in CATALOG:
+        try: return json.load(open(p))["tools"]
+        except Exception: continue
+    return []
+
+def installed(pkg):
+    try:
+        r=subprocess.run(["dpkg-query","-W","-f=${Status}",pkg],
+                         capture_output=True,text=True,timeout=3)
+        return "install ok installed" in r.stdout
+    except Exception:
+        return False
+
+class Store(Adw.Application):
+    def __init__(s):
+        super().__init__(application_id="com.aether.store",
+                         flags=Gio.ApplicationFlags.NON_UNIQUE)
+        s.tools=load()
+
+    def do_activate(s):
+        p=Gtk.CssProvider(); p.load_from_data(CSS.encode())
+        Gtk.StyleContext.add_provider_for_display(Gdk.Display.get_default(),p,Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
+        w=Adw.ApplicationWindow(application=s, title="Tool Store",
+                                default_width=560, default_height=680)
+        w.set_resizable(False); s.win=w
+        root=Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8); root.add_css_class("st-root")
+        root.append(Gtk.Label(label="Tool Store", xalign=0, css_classes=["st-title"]))
+        root.append(Gtk.Label(label="Vetted tools from Debian's repos — add what you need. Install opens a terminal where you review the command and sudo authenticates; nothing installs as root on its own.",
+                              xalign=0, wrap=True, css_classes=["st-note"]))
+        sc=Gtk.ScrolledWindow(vexpand=True); sc.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
+        box=Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
+        if not s.tools:
+            box.append(Gtk.Label(label="Catalog not found.", xalign=0, css_classes=["st-note"]))
+        else:
+            cat=None
+            for t in s.tools:
+                if t["cat"]!=cat:
+                    cat=t["cat"]; box.append(Gtk.Label(label=cat.upper(), xalign=0, css_classes=["cat"]))
+                box.append(s._row(t))
+        sc.set_child(box); root.append(sc)
+        w.set_content(root)
+        k=Gtk.EventControllerKey()
+        k.connect("key-pressed", lambda c,kv,kc,st:(s.quit() or True) if kv==Gdk.KEY_Escape else False)
+        w.add_controller(k)
+        w.present()
+
+    def _row(s, t):
+        row=Gtk.Box(spacing=10); row.add_css_class("tool")
+        v=Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=1, hexpand=True)
+        top=Gtk.Box(spacing=8)
+        top.append(Gtk.Label(label=t["name"], xalign=0, css_classes=["t-name"]))
+        top.append(Gtk.Label(label=t["pkg"], xalign=0, css_classes=["t-pkg"], valign=Gtk.Align.CENTER))
+        v.append(top)
+        d=Gtk.Label(label=t["desc"], xalign=0, wrap=True, css_classes=["t-desc"])
+        d.set_ellipsize(Pango.EllipsizeMode.END); d.set_max_width_chars(60); v.append(d)
+        row.append(v)
+        if installed(t["pkg"]):
+            row.append(Gtk.Label(label="Installed", css_classes=["done"], valign=Gtk.Align.CENTER))
+        else:
+            b=Gtk.Button(label="Install"); b.add_css_class("inst"); b.set_valign(Gtk.Align.CENTER)
+            b.connect("clicked", lambda _,pkg=t["pkg"]: s._install(pkg))
+            row.append(b)
+        return row
+
+    def _install(s, pkg):
+        # Open a terminal with the command pre-filled for review. sudo prompts
+        # there — the GUI never runs anything as root itself.
+        script=('read -e -i "sudo apt install -y %s" -p "Review, then Enter to run: " c; '
+                'eval "$c"; echo; read -p "[done - press Enter to close]"' % pkg)
+        try: subprocess.Popen([TERM, "bash", "-lc", script])
+        except Exception: pass
+
+if __name__=="__main__":
+    Adw.init(); Store().run(None)

@@ -49,6 +49,8 @@ vim
 # settings surfaces (no full GUI; these are the real config tools)
 pavucontrol
 network-manager-gnome
+# night light (scheduled screen warming, macOS Night Shift-style)
+wlsunset
 # system monitoring + hardware
 lm-sensors
 i2c-tools

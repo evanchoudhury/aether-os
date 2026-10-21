@@ -1,0 +1,144 @@
+#!/usr/bin/env python3
+# AETHER Assistant — an offline tool-coach. Ask "what is nmap" or "scan a
+# network" and get a plain-language answer, a SAFE starter command you copy
+# (never auto-run), and a caution. Curated knowledge, no model, no network,
+# no hallucinations. A local LLM is a documented opt-in, not baked in.
+# Bound to Super+A. (GTK4 + libadwaita)
+import gi, os, json, subprocess, shutil
+gi.require_version("Gtk","4.0"); gi.require_version("Adw","1")
+from gi.repository import Gtk, Adw, Gio, Gdk, Pango
+
+KB_PATHS=["/usr/share/aether/assistant/kb.json",
+          os.path.expanduser("~/.local/share/aether/assistant/kb.json")]
+INITQ=" ".join(__import__("sys").argv[1:])
+
+CSS="""
+window { background: rgba(14,17,22,0.93); border-radius: 18px; }
+.as-root { padding: 16px; }
+.as-title { font-weight:800; font-size:18px; color:#E6EAF0; }
+.as-sub { color:#9AA4B2; font-size:12px; margin-bottom:4px; }
+.as-entry { background: rgba(255,255,255,0.08); border-radius:13px; padding:10px 14px;
+            color:#E6EAF0; font-size:15px; }
+.chip { background: rgba(255,255,255,0.08); border-radius:11px; padding:6px 11px;
+        color:#9AA4B2; font-size:12px; font-weight:600; border:1px solid rgba(255,255,255,0.06); }
+.chip:hover { background: rgba(53,208,186,0.22); color:#E6EAF0; }
+.ans { background: rgba(255,255,255,0.06); border-radius:15px; padding:14px;
+       border:1px solid rgba(255,255,255,0.07); }
+.a-title { color:#E6EAF0; font-size:16px; font-weight:800; }
+.a-what  { color:#C7CED8; font-size:13px; }
+.a-cmd   { background: rgba(0,0,0,0.45); border-radius:10px; padding:9px 12px;
+           color:#35D0BA; font-family: 'JetBrains Mono', monospace; font-size:13px; }
+.a-caution { color:#D29922; font-size:12px; }
+.a-label { color:#9AA4B2; font-size:10px; font-weight:800; letter-spacing:0.6px; }
+.copy { background: rgba(53,208,186,0.20); border-radius:9px; padding:4px 12px;
+        color:#E6EAF0; font-weight:700; font-size:12px; min-height:0; }
+.copy:hover { background: rgba(53,208,186,0.38); }
+.rel { color:#9AA4B2; font-size:11px; font-weight:700; margin-top:4px; }
+"""
+
+def load_kb():
+    for p in KB_PATHS:
+        try: return json.load(open(p))["entries"]
+        except Exception: continue
+    return []
+
+def score(entry, q):
+    ql=q.lower(); words=[w for w in ql.replace("?"," ").split() if w]
+    if not words: return 0
+    hay=(entry["title"]+" "+" ".join(entry["keywords"])).lower()
+    s=0
+    for kw in entry["keywords"]:
+        if kw in ql: s+=3
+    for w in words:
+        if w in hay: s+=1
+    return s
+
+class Assistant(Adw.Application):
+    def __init__(s):
+        super().__init__(application_id="com.aether.assistant",
+                         flags=Gio.ApplicationFlags.NON_UNIQUE)
+        s.kb=load_kb()
+
+    def do_activate(s):
+        p=Gtk.CssProvider(); p.load_from_data(CSS.encode())
+        Gtk.StyleContext.add_provider_for_display(Gdk.Display.get_default(),p,Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
+        w=Adw.ApplicationWindow(application=s, title="AETHER Assistant",
+                                default_width=560, default_height=640)
+        w.set_resizable(False); s.win=w
+        root=Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10); root.add_css_class("as-root")
+        t=Gtk.Label(label="Assistant", xalign=0); t.add_css_class("as-title"); root.append(t)
+        sub=Gtk.Label(label="Ask about a tool or a task — answers are offline and curated.", xalign=0)
+        sub.add_css_class("as-sub"); root.append(sub)
+        s.entry=Gtk.SearchEntry(); s.entry.add_css_class("as-entry")
+        s.entry.set_placeholder_text("e.g. scan a network, crack a password, go anonymous…")
+        s.entry.connect("search-changed", lambda _: s.render())
+        s.entry.connect("activate", lambda _: s.render())
+        root.append(s.entry)
+        sc=Gtk.ScrolledWindow(vexpand=True); sc.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
+        s.body=Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
+        sc.set_child(s.body); root.append(sc)
+        w.set_content(root)
+        k=Gtk.EventControllerKey()
+        k.connect("key-pressed", lambda c,kv,kc,st:(s.quit() or True) if kv==Gdk.KEY_Escape else False)
+        w.add_controller(k)
+        w.present(); s.entry.grab_focus()
+        if INITQ: s.entry.set_text(INITQ)
+        else: s.render()
+
+    def render(s):
+        for c in list(s.body): s.body.remove(c)
+        if not s.kb:
+            s.body.append(Gtk.Label(label="Knowledge base not found.", xalign=0)); return
+        q=s.entry.get_text().strip()
+        if not q:
+            s.body.append(s._label("TOPICS")); s.body.append(s._chips(s.kb)); return
+        ranked=sorted(((score(e,q),e) for e in s.kb), key=lambda x:-x[0])
+        top=[e for sc_,e in ranked if sc_>0]
+        if not top:
+            s.body.append(Gtk.Label(label="No exact match. Browse topics:", xalign=0, css_classes=["a-what"]))
+            s.body.append(s._chips(s.kb)); return
+        s.body.append(s._answer(top[0]))
+        if len(top)>1:
+            s.body.append(Gtk.Label(label="Related", xalign=0, css_classes=["rel"]))
+            s.body.append(s._chips(top[1:4]))
+
+    def _label(s, txt):
+        l=Gtk.Label(label=txt, xalign=0); l.add_css_class("a-label"); return l
+
+    def _chips(s, entries):
+        fb=Gtk.FlowBox(); fb.set_selection_mode(Gtk.SelectionMode.NONE)
+        fb.set_max_children_per_line(3); fb.set_column_spacing(8); fb.set_row_spacing(8)
+        for e in entries:
+            b=Gtk.Button(label=e["title"].split(" — ")[0]); b.add_css_class("chip")
+            b.connect("clicked", lambda _,x=e:(s.entry.set_text(x["keywords"][0])))
+            fb.append(b)
+        return fb
+
+    def _answer(s, e):
+        card=Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8); card.add_css_class("ans")
+        card.append(Gtk.Label(label=e["title"], xalign=0, wrap=True, css_classes=["a-title"]))
+        card.append(Gtk.Label(label=e["what"], xalign=0, wrap=True, css_classes=["a-what"]))
+        if e.get("command"):
+            card.append(s._label("TRY"))
+            row=Gtk.Box(spacing=8)
+            cmd=Gtk.Label(label=e["command"], xalign=0, wrap=True, selectable=True); cmd.add_css_class("a-cmd")
+            cmd.set_hexpand(True); cmd.set_xalign(0)
+            row.append(cmd)
+            cp=Gtk.Button(label="Copy"); cp.add_css_class("copy"); cp.set_valign(Gtk.Align.START)
+            cp.connect("clicked", lambda _,c=e["command"].split("   #")[0].strip(): s._copy(c, cp))
+            row.append(cp); card.append(row)
+        if e.get("caution"):
+            card.append(s._label("HEADS UP"))
+            card.append(Gtk.Label(label=e["caution"], xalign=0, wrap=True, css_classes=["a-caution"]))
+        return card
+
+    def _copy(s, text, btn):
+        if shutil.which("wl-copy"):
+            try: subprocess.run(["wl-copy", text], timeout=2)
+            except Exception: pass
+        else:
+            Gdk.Display.get_default().get_clipboard().set(text)
+        btn.set_label("Copied")
+
+if __name__=="__main__":
+    Adw.init(); Assistant().run(None)

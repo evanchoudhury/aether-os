@@ -1,0 +1,137 @@
+#!/usr/bin/env python3
+# AETHER Notification Center — a macOS-style panel that collects notifications.
+# It reads mako's live + history buffers over mako's private D-Bus interface
+# (fr.emersion.Mako), so there is no second daemon: mako already stores them.
+# Bound to Super+N. Escape or click-away closes. (GTK4 + libadwaita)
+import gi, os
+gi.require_version("Gtk","4.0"); gi.require_version("Adw","1")
+from gi.repository import Gtk, Adw, Gio, Gdk, GLib
+
+MAKO_DEST="org.freedesktop.Notifications"; MAKO_PATH="/fr/emersion/Mako"; MAKO_IFACE="fr.emersion.Mako"
+
+CSS="""
+window { background: rgba(14,17,22,0.90); border-radius: 18px; }
+.nc-root { padding: 14px; }
+.nc-head { font-weight:800; font-size:17px; color:#E6EAF0; }
+.nc-clear { background: rgba(255,255,255,0.09); border-radius:10px; padding:4px 12px;
+            color:#9AA4B2; font-weight:700; font-size:12px; min-height:0; }
+.nc-clear:hover { background: rgba(248,81,73,0.26); color:#E6EAF0; }
+.ncard { background: rgba(255,255,255,0.08); border-radius:15px; padding:11px 13px;
+         border:1px solid rgba(255,255,255,0.06); }
+.ncard.live { border-color: rgba(53,208,186,0.55); }
+.ncard.high { border-color: rgba(210,153,34,0.70); }
+.n-app   { color:#35D0BA; font-size:10px; font-weight:800; letter-spacing:0.6px; }
+.n-sum   { color:#E6EAF0; font-size:14px; font-weight:700; }
+.n-body  { color:#9AA4B2; font-size:12px; }
+.n-empty { color:#9AA4B2; font-size:14px; }
+.n-live-tag { color:#35D0BA; font-size:9px; font-weight:800; }
+"""
+
+def s_(v):
+    # unpack a GVariant field value to a plain str
+    try: return v.get_string() if v else ""
+    except Exception:
+        try: return str(v.unpack())
+        except Exception: return ""
+
+class NC(Adw.Application):
+    def __init__(s):
+        super().__init__(application_id="com.aether.noticenter",
+                         flags=Gio.ApplicationFlags.NON_UNIQUE)
+        s._shown=False
+
+    def _mako(s, method):
+        try:
+            bus=Gio.bus_get_sync(Gio.BusType.SESSION, None)
+            r=bus.call_sync(MAKO_DEST, MAKO_PATH, MAKO_IFACE, method, None,
+                            GLib.VariantType("(aa{sv})"), Gio.DBusCallFlags.NONE, 1500, None)
+            return r.get_child_value(0)  # aa{sv}
+        except Exception:
+            return None
+
+    def _list(s, method):
+        # -> list of dicts {app,summary,body,urgency,id}
+        arr=s._mako(method); out=[]
+        if arr is None: return out
+        for i in range(arr.n_children()):
+            d=arr.get_child_value(i); rec={}
+            for j in range(d.n_children()):
+                kv=d.get_child_value(j)
+                rec[kv.get_child_value(0).get_string()]=kv.get_child_value(1).get_variant()
+            urg=0
+            try: urg=rec.get("urgency").get_byte() if "urgency" in rec else 0
+            except Exception: urg=0
+            out.append({"app":s_(rec.get("app-name")) or "Notification",
+                        "summary":s_(rec.get("summary")), "body":s_(rec.get("body")),
+                        "urgency":urg, "id":rec.get("id").unpack() if "id" in rec else 0})
+        return out
+
+    def _clear(s):
+        # mako exposes no clear-history call, and dismiss always re-adds to the
+        # buffer. The history buffer is in-memory, so restarting the daemon is
+        # the one reliable clear. ponytail: restart mako; no API exists to do less.
+        import subprocess
+        subprocess.run(["pkill", "-x", "mako"])
+        for _ in range(20):
+            if subprocess.run(["pgrep", "-x", "mako"], capture_output=True).returncode != 0: break
+            GLib.usleep(50000)
+        subprocess.Popen(["mako"], start_new_session=True,
+                         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+    def do_activate(s):
+        p=Gtk.CssProvider(); p.load_from_data(CSS.encode())
+        Gtk.StyleContext.add_provider_for_display(Gdk.Display.get_default(),p,Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
+        w=Adw.ApplicationWindow(application=s, title="Notification Center",
+                                default_width=400, default_height=720)
+        w.set_resizable(False); s.win=w
+        root=Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10); root.add_css_class("nc-root")
+        head=Gtk.Box(spacing=8)
+        t=Gtk.Label(label="Notifications", xalign=0); t.add_css_class("nc-head"); t.set_hexpand(True)
+        clr=Gtk.Button(label="Clear"); clr.add_css_class("nc-clear"); clr.set_valign(Gtk.Align.CENTER)
+        clr.connect("clicked", lambda _:(s._clear(), s._reload()))
+        head.append(t); head.append(clr); root.append(head)
+        s.scroll=Gtk.ScrolledWindow(vexpand=True); s.scroll.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
+        s.box=Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=9)
+        s.scroll.set_child(s.box); root.append(s.scroll)
+        w.set_content(root)
+        s._reload()
+        k=Gtk.EventControllerKey()
+        k.connect("key-pressed", lambda c,kv,kc,st:(s.quit() or True) if kv==Gdk.KEY_Escape else False)
+        w.add_controller(k)
+        def on_active(win,_):
+            if win.is_active(): s._shown=True
+            elif s._shown: GLib.timeout_add(80, s.quit)
+        w.connect("notify::is-active", on_active)
+        w.present()
+
+    def _reload(s):
+        for c in list(s.box): s.box.remove(c)
+        live=s._list("ListNotifications")
+        hist=s._list("ListHistory")
+        seen={n["id"] for n in live}
+        items=live + [h for h in hist if h["id"] not in seen]
+        items=[n for n in items if n["summary"] or n["body"]]  # drop empty/malformed
+        if not items:
+            e=Gtk.Label(label="No Notifications", xalign=0.5); e.add_css_class("n-empty")
+            e.set_vexpand(True); e.set_valign(Gtk.Align.CENTER); s.box.append(e); return
+        liveids={n["id"] for n in live}
+        for n in items: s.box.append(s._card(n, n["id"] in liveids))
+
+    def _card(s, n, is_live):
+        c=Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=2); c.add_css_class("ncard")
+        if is_live: c.add_css_class("live")
+        elif n["urgency"]==2: c.add_css_class("high")
+        top=Gtk.Box(spacing=6)
+        a=Gtk.Label(label=n["app"].upper(), xalign=0); a.add_css_class("n-app"); a.set_hexpand(True)
+        top.append(a)
+        if is_live:
+            lt=Gtk.Label(label="NOW", xalign=1); lt.add_css_class("n-live-tag"); top.append(lt)
+        c.append(top)
+        if n["summary"]:
+            sm=Gtk.Label(label=n["summary"], xalign=0, wrap=True); sm.add_css_class("n-sum"); c.append(sm)
+        if n["body"]:
+            bd=Gtk.Label(label=n["body"], xalign=0, wrap=True); bd.add_css_class("n-body"); c.append(bd)
+        return c
+
+if __name__=="__main__":
+    Adw.init(); NC().run(None)

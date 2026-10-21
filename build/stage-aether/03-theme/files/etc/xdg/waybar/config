@@ -5,10 +5,22 @@
   "spacing": 4,
   "modules-left": ["custom/aether", "custom/labmode"],
   "modules-center": [],
-  "modules-right": ["cpu", "memory", "network", "pulseaudio", "clock"],
+  "modules-right": ["cpu", "memory", "network", "pulseaudio", "custom/nightlight", "custom/notifications", "clock"],
 
   "custom/aether": {
     "format": "AETHER",
+    "tooltip": false
+  },
+  "custom/notifications": {
+    "format": "Alerts",
+    "on-click": "aether-noticenter",
+    "tooltip": false
+  },
+  "custom/nightlight": {
+    "format": "Night {}",
+    "exec": "aether-nightlight status",
+    "interval": 10,
+    "on-click": "aether-nightlight toggle",
     "tooltip": false
   },
   "custom/labmode": {

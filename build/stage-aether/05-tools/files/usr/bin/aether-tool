@@ -10,5 +10,7 @@ tool="${1:-}"
 exec foot bash -lc '
   printf "=== AETHER :: %s ===\n\n" "$1"
   "$1" --help 2>&1 | head -n 40 || true
-  printf "\n(ready — type %s ... to begin)\n\n" "$1"
+  printf "\n(ready — type %s ... to begin)\n" "$1"
+  printf "Tip: stay in scope — prefix a command with '\''aether-scope guard'\'' to\n"
+  printf "     check its target first, e.g.  aether-scope guard %s <target>\n\n" "$1"
   exec bash' aether-tool "$tool"
