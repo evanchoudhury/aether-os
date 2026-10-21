@@ -9,6 +9,9 @@
     <item label="Files">
       <action name="Execute"><command>pcmanfm</command></action>
     </item>
+    <item label="AirDrop (LocalSend)">
+      <action name="Execute"><command>localsend_app</command></action>
+    </item>
     <item label="App Launcher">
       <action name="Execute"><command>fuzzel</command></action>
     </item>

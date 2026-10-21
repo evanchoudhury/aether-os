@@ -54,6 +54,8 @@ lm-sensors
 i2c-tools
 # backup / recovery
 timeshift
+# AirDrop-style sharing: curl fetches the LocalSend .deb at build time (06-airdrop)
+curl
 # privacy / Lab Mode anonymity (Tor + VPN kill-switch)
 # (torbrowser-launcher lives in Debian 'contrib' — not preinstalled to keep the
 #  build on main-only; it's a one-command opt-in, see docs/PRIVACY.md)
