@@ -3,6 +3,7 @@
 
 install -v -m 755 files/usr/bin/aether-tool    "${ROOTFS_DIR}/usr/bin/aether-tool"
 install -v -m 755 files/usr/bin/aether-capture "${ROOTFS_DIR}/usr/bin/aether-capture"
+install -v -m 755 files/usr/bin/aether-search  "${ROOTFS_DIR}/usr/bin/aether-search"
 
 install -v -d -m 755 "${ROOTFS_DIR}/etc/xdg/labwc"
 install -v -m 644 files/etc/xdg/labwc/menu.xml "${ROOTFS_DIR}/etc/xdg/labwc/menu.xml"
@@ -46,3 +47,15 @@ Terminal=false
 Categories=System;Security;
 EOF
 chmod 644 "$apps/aether-capture.desktop"
+
+cat > "$apps/aether-search.desktop" <<EOF
+[Desktop Entry]
+Type=Application
+Name=Search
+Comment=Find apps and files (Spotlight-style). Shortcut: Super+Space
+Exec=aether-search
+Icon=system-search
+Terminal=false
+Categories=Utility;System;
+EOF
+chmod 644 "$apps/aether-search.desktop"

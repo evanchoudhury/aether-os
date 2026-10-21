@@ -1,0 +1,131 @@
+#!/usr/bin/env python3
+# AETHER Search — a macOS-Spotlight-style overlay. Type to find apps AND files;
+# Enter opens the top hit, click a row to open it, Escape or click-away closes.
+# Bound to Super+Space. (GTK4 + libadwaita)
+import gi, os, sys, shutil, subprocess, glob
+gi.require_version("Gtk","4.0"); gi.require_version("Adw","1")
+from gi.repository import Gtk, Adw, Gio, Gdk, GLib, Pango
+
+HOME=os.path.expanduser("~")
+FD = shutil.which("fdfind") or shutil.which("fd") or "/usr/bin/fdfind"
+INITQ = sys.argv[1] if len(sys.argv)>1 else ""
+
+CSS="""
+window { background: rgba(10,13,18,0.55); }
+.sbar { background: rgba(28,34,43,0.92); border:1px solid rgba(255,255,255,0.10);
+        border-radius: 18px; box-shadow: 0 24px 70px rgba(0,0,0,0.55); }
+.sentry { background: transparent; color:#E6EAF0; font-size: 26px; padding: 16px 20px; }
+.sentry text { color:#E6EAF0; } .sentry > image { -gtk-icon-size:22px; color:#9AA4B2; }
+.results { background: transparent; }
+row { padding: 6px 8px; border-radius: 12px; }
+row:selected, row:hover { background: rgba(53,208,186,0.18); }
+.rname { color:#E6EAF0; font-size: 15px; font-weight:600; }
+.rsub  { color:#9AA4B2; font-size: 12px; }
+.rkind { color:#35D0BA; font-size: 11px; font-weight:700; }
+"""
+
+class Hit:
+    def __init__(s, kind, name, sub, launch, gicon=None, iname=None):
+        s.kind=kind; s.name=name; s.sub=sub; s.launch=launch; s.gicon=gicon; s.iname=iname
+
+class Search(Adw.Application):
+    def __init__(s): super().__init__(application_id="com.aether.search",
+                                       flags=Gio.ApplicationFlags.NON_UNIQUE)
+
+    def do_activate(s):
+        p=Gtk.CssProvider(); p.load_from_data(CSS.encode())
+        Gtk.StyleContext.add_provider_for_display(Gdk.Display.get_default(),p,Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
+        s.apps=[a for a in Gio.AppInfo.get_all() if a.should_show()]
+        win=Adw.ApplicationWindow(application=s, title="Search"); win.fullscreen(); s.win=win
+        outer=Gtk.Box(orientation=Gtk.Orientation.VERTICAL, halign=Gtk.Align.CENTER,
+                      valign=Gtk.Align.START, margin_top=140, spacing=12)
+        outer.set_size_request(680,-1)
+        card=Gtk.Box(orientation=Gtk.Orientation.VERTICAL); card.add_css_class("sbar"); card.set_size_request(680,-1)
+        s.entry=Gtk.SearchEntry(); s.entry.add_css_class("sentry"); s.entry.set_placeholder_text("Search apps and files…")
+        card.append(s.entry)
+        s.scroll=Gtk.ScrolledWindow(vexpand=False); s.scroll.set_max_content_height(520); s.scroll.set_propagate_natural_height(True)
+        s.list=Gtk.ListBox(); s.list.add_css_class("results"); s.list.set_selection_mode(Gtk.SelectionMode.BROWSE)
+        s.scroll.set_child(s.list); card.append(s.scroll)
+        outer.append(card); win.set_content(outer)
+        s.hits=[]; s._timer=0
+        s.entry.connect("search-changed", s.on_change)
+        s.entry.connect("activate", s.on_enter)
+        s.list.connect("row-activated", lambda lb,row: s.open_hit(s.hits[row.get_index()]))
+        k=Gtk.EventControllerKey()
+        k.connect("key-pressed", s.on_key); win.add_controller(k)
+        g=Gtk.GestureClick(); g.connect("released", lambda *a: s.quit()); win.add_controller(g)
+        win.present(); s.entry.grab_focus()
+        if INITQ: s.entry.set_text(INITQ); s.entry.set_position(-1)
+
+    def on_key(s,ctrl,kv,kc,st):
+        if kv==Gdk.KEY_Escape: s.quit(); return True
+        if kv in (Gdk.KEY_Down,Gdk.KEY_Up):
+            n=len(s.hits)
+            if n:
+                r=s.list.get_selected_row(); i=r.get_index() if r else -1
+                i=(i+1)%n if kv==Gdk.KEY_Down else (i-1)%n
+                s.list.select_row(s.list.get_row_at_index(i))
+            return True
+        return False
+
+    def on_change(s,_):
+        if s._timer: GLib.source_remove(s._timer)
+        s._timer=GLib.timeout_add(140, s.do_search)
+
+    def do_search(s):
+        s._timer=0
+        q=s.entry.get_text().strip()
+        for c in list(s.list):
+            s.list.remove(c)
+        s.hits=[]
+        if not q: return False
+        ql=q.lower()
+        # apps first
+        for a in s.apps:
+            if ql in a.get_display_name().lower():
+                s.hits.append(Hit("APP", a.get_display_name(), a.get_description() or "Application",
+                                  ("app",a), gicon=a.get_icon()))
+        s.hits=s.hits[:6]
+        # files via fd (fast), limited to HOME
+        if FD:
+            try:
+                out=subprocess.run([FD,"-i","--max-results","12","-E",".cache","-E",".git",q,HOME],
+                                   capture_output=True,text=True,timeout=2).stdout.splitlines()
+            except Exception: out=[]
+            for path in out:
+                isdir=os.path.isdir(path)
+                s.hits.append(Hit("FOLDER" if isdir else "FILE", os.path.basename(path),
+                                  path.replace(HOME,"~"), ("file",path),
+                                  iname="folder" if isdir else "text-x-generic"))
+        for h in s.hits: s.list.append(s.make_row(h))
+        r=s.list.get_row_at_index(0)
+        if r: s.list.select_row(r)
+        return False
+
+    def make_row(s,h):
+        row=Gtk.ListBoxRow(); box=Gtk.Box(spacing=12, margin_start=6, margin_end=6, margin_top=4, margin_bottom=4)
+        img=Gtk.Image(); img.set_pixel_size(34)
+        if h.gicon: img.set_from_gicon(h.gicon)
+        else: img.set_from_icon_name(h.iname or "application-x-executable")
+        box.append(img)
+        v=Gtk.Box(orientation=Gtk.Orientation.VERTICAL, hexpand=True)
+        n=Gtk.Label(label=h.name, xalign=0); n.add_css_class("rname"); n.set_ellipsize(Pango.EllipsizeMode.END)
+        sub=Gtk.Label(label=h.sub, xalign=0); sub.add_css_class("rsub"); sub.set_ellipsize(Pango.EllipsizeMode.MIDDLE)
+        v.append(n); v.append(sub); box.append(v)
+        k=Gtk.Label(label=h.kind); k.add_css_class("rkind"); k.set_valign(Gtk.Align.CENTER); box.append(k)
+        row.set_child(box); return row
+
+    def on_enter(s,_):
+        r=s.list.get_selected_row() or s.list.get_row_at_index(0)
+        if r and s.hits: s.open_hit(s.hits[r.get_index()])
+
+    def open_hit(s,h):
+        kind,payload=h.launch
+        try:
+            if kind=="app": payload.launch([],None)
+            else: subprocess.Popen(["xdg-open",payload])
+        except Exception: pass
+        s.quit()
+
+if __name__=="__main__":
+    Adw.init(); Search().run(None)

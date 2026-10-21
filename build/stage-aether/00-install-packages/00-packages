@@ -56,6 +56,8 @@ i2c-tools
 timeshift
 # AirDrop-style sharing: curl fetches the LocalSend .deb at build time (06-airdrop)
 curl
+# global search (aether-search Spotlight overlay) — fast file find
+fd-find
 # privacy / Lab Mode anonymity (Tor + VPN kill-switch)
 # (torbrowser-launcher lives in Debian 'contrib' — not preinstalled to keep the
 #  build on main-only; it's a one-command opt-in, see docs/PRIVACY.md)
