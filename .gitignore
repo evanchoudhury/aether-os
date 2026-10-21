@@ -13,3 +13,8 @@ __pycache__/
 # generated analysis / local-only assets
 graphify-out/
 docs/preview/*.jpg
+
+# build/promo artifacts (never commit — large frames + node_modules)
+brag-output/
+brag-output-*/
+.impeccable/
