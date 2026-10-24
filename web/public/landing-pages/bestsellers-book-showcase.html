@@ -1,0 +1,1787 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0E1116">
+  <meta
+    name="description"
+    content="AETHER OS — a macOS-grade, security-hardened Linux desktop for the Raspberry Pi 4. One switch arms the box: Tor + a VPN kill-switch. Learn the tools, stay in scope, ship a report."
+  >
+  <title>AETHER OS — Field Manuals for the hardened desktop</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --ink: #0E1116;
+      --ink-deep: #080A0E;
+      --ink-soft: #171B22;
+      --pink: #35D0BA;
+      --pink-bright: #6FF0DC;
+      --text: #E6EAF0;
+      --muted: #9AA4B2;
+      --periwinkle: #35D0BA;
+      --sage: #89946f;
+      --clay: #D29922;
+      --moss: #5f684f;
+      --paper: #E6EAF0;
+      --serif: "Instrument Serif", "Iowan Old Style", "Palatino Linotype", Palatino,
+        Baskerville, Georgia, serif;
+      --sans: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+      --mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      --ease: cubic-bezier(.2, .78, .2, 1);
+      --mx: 0px;
+      --my: 0px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      width: 100%;
+      min-height: 100%;
+      margin: 0;
+      background: var(--ink);
+    }
+
+    body {
+      min-height: 100svh;
+      overflow: hidden;
+      color: var(--text);
+      font-family: var(--sans);
+      -webkit-font-smoothing: antialiased;
+      cursor: default;
+    }
+
+    /* Display voice: the editorial serif. Body and UI stay in the sans. */
+    .hero-word, .cover-title, .detail-title, .menu-link { font-family: var(--serif); }
+    ::selection { background: rgba(53, 208, 186, .3); color: #fff; }
+    :root { accent-color: var(--pink); }
+
+    button,
+    a {
+      font: inherit;
+    }
+
+    button {
+      color: inherit;
+    }
+
+    .stage {
+      position: relative;
+      isolation: isolate;
+      width: 100%;
+      min-height: 100svh;
+      overflow: hidden;
+      background:
+        radial-gradient(circle at 49% 84%, rgba(53, 208, 186, .14), transparent 36%),
+        radial-gradient(circle at 14% 4%, rgba(90, 120, 255, .10), transparent 30%),
+        linear-gradient(180deg, #12202a 0%, var(--ink) 50%, #05070a 100%);
+    }
+
+    .stage::after {
+      content: "";
+      position: absolute;
+      z-index: 30;
+      inset: 0;
+      pointer-events: none;
+      opacity: .12;
+      background-image:
+        url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.86' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.22'/%3E%3C/svg%3E");
+      mix-blend-mode: soft-light;
+    }
+
+    .topbar {
+      position: fixed;
+      z-index: 50;
+      top: 0;
+      left: 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+      padding: 26px 3.2vw;
+      pointer-events: none;
+    }
+
+    .brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 11px;
+      color: var(--text);
+      font-size: clamp(20px, 1.9vw, 27px);
+      font-weight: 700;
+      letter-spacing: -.02em;
+      line-height: 1;
+      text-decoration: none;
+      pointer-events: auto;
+    }
+
+    .brand .mark {
+      display: inline-grid;
+      place-items: center;
+      width: 30px;
+      height: 30px;
+      color: var(--ink);
+      background: var(--pink);
+      border-radius: 9px;
+      font-size: 17px;
+      font-weight: 800;
+      font-family: var(--mono);
+      box-shadow: 0 6px 16px rgba(2, 6, 10, .55), 0 0 14px rgba(53, 208, 186, .4);
+    }
+
+    .brand .brand-os { color: var(--pink); }
+
+    .nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      pointer-events: auto;
+    }
+
+    .icon-button,
+    .ticket-button,
+    .close-button,
+    .pill,
+    .book-card {
+      border: 0;
+      outline: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .icon-button,
+    .ticket-button {
+      height: 50px;
+      border: 1px solid rgba(53, 208, 186, .22);
+      background: rgba(23, 27, 34, .82);
+      color: var(--text);
+      box-shadow: 0 8px 26px rgba(5, 8, 12, .4);
+      transition: transform 240ms var(--ease), background-color 240ms ease, border-color 240ms ease;
+    }
+
+    .icon-button {
+      display: grid;
+      width: 50px;
+      place-items: center;
+      border-radius: 50%;
+      cursor: pointer;
+    }
+
+    .menu-glyph {
+      position: relative;
+      width: 14px;
+      height: 10px;
+    }
+
+    .menu-glyph::before,
+    .menu-glyph::after {
+      content: "";
+      position: absolute;
+      left: 1px;
+      width: 12px;
+      height: 2px;
+      border-radius: 2px;
+      background: currentColor;
+      transition: transform 300ms var(--ease), top 300ms var(--ease);
+    }
+
+    .menu-glyph::before {
+      top: 2px;
+    }
+
+    .menu-glyph::after {
+      top: 7px;
+    }
+
+    [data-menu="open"] .menu-glyph::before {
+      top: 5px;
+      transform: rotate(45deg);
+    }
+
+    [data-menu="open"] .menu-glyph::after {
+      top: 5px;
+      transform: rotate(-45deg);
+    }
+
+    .ticket-button {
+      display: inline-grid;
+      min-width: 138px;
+      padding: 0 25px;
+      place-items: center;
+      border-radius: 999px;
+      cursor: pointer;
+      font-family: var(--mono);
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      text-decoration: none;
+    }
+
+    .icon-button:hover,
+    .ticket-button:hover {
+      transform: translateY(-3px);
+      background: rgba(53, 208, 186, .16);
+      border-color: rgba(53, 208, 186, .5);
+    }
+
+    .icon-button:focus-visible,
+    .ticket-button:focus-visible,
+    .close-button:focus-visible,
+    .pill:focus-visible,
+    .menu-link:focus-visible {
+      outline: 2px solid var(--pink-bright);
+      outline-offset: 4px;
+    }
+
+    .hero-word {
+      position: absolute;
+      z-index: 1;
+      top: 11.5vh;
+      left: 50%;
+      margin: 0;
+      color: var(--pink);
+      font-size: clamp(184px, 22vw, 325px);
+      font-style: italic;
+      font-weight: 500;
+      letter-spacing: -.085em;
+      line-height: .84;
+      white-space: nowrap;
+      text-shadow: 0 0 42px rgba(53, 208, 186, .26);
+      transform: translate3d(calc(-50% + var(--mx) * -.12), calc(var(--my) * -.12), 0);
+      transition: opacity 700ms ease, filter 700ms ease, transform 900ms var(--ease);
+      user-select: none;
+    }
+
+    .gallery {
+      position: absolute;
+      z-index: 5;
+      inset: 0;
+      perspective: 1400px;
+      transform-style: flat;
+    }
+
+    .book-card {
+      --hover-y: 0px;
+      --local-x: 0px;
+      --local-y: 0px;
+      position: absolute;
+      left: var(--x);
+      top: var(--y);
+      width: var(--w);
+      aspect-ratio: .672 / 1;
+      padding: 0;
+      background: transparent;
+      cursor: pointer;
+      transform:
+        translate3d(
+          calc(-50% + var(--local-x)),
+          calc(var(--hover-y) + var(--local-y)),
+          0
+        )
+        rotate(var(--r))
+        rotateY(var(--yaw));
+      transform-style: preserve-3d;
+      transition:
+        left 1100ms var(--ease),
+        top 1100ms var(--ease),
+        width 1100ms var(--ease),
+        opacity 500ms ease,
+        filter 500ms ease,
+        transform 520ms var(--ease);
+      will-change: transform, left, top, width;
+    }
+
+    .book-card[data-book="labmode"] {
+      --x: 23.2%;
+      --y: 40.5%;
+      --w: min(30.5vw, 435px);
+      --r: -8deg;
+      --yaw: -7deg;
+      z-index: 1;
+    }
+
+    .book-card[data-book="labs"] {
+      --x: 50%;
+      --y: 32.2%;
+      --w: min(33vw, 470px);
+      --r: .8deg;
+      --yaw: -3deg;
+      z-index: 3;
+    }
+
+    .book-card[data-book="hardened"] {
+      --x: 77%;
+      --y: 42%;
+      --w: min(30.5vw, 435px);
+      --r: 8deg;
+      --yaw: 7deg;
+      z-index: 2;
+    }
+
+    .book-card:hover,
+    .book-card[data-hovered="true"] {
+      --hover-y: -28px;
+      z-index: 8;
+    }
+
+    .book {
+      position: relative;
+      display: block;
+      width: 100%;
+      height: 100%;
+      transform-style: preserve-3d;
+      transition: transform 800ms var(--ease);
+    }
+
+    .book-card:hover .book {
+      transform: scale(1.035) rotateX(-1.5deg);
+    }
+
+    .book-back,
+    .page-block,
+    .page-fan,
+    .front-cover,
+    .book-shadow {
+      position: absolute;
+      inset: 0;
+      border-radius: 3px 7px 7px 3px;
+    }
+
+    .book-shadow {
+      z-index: -2;
+      inset: 5% -4% -2% 4%;
+      border-radius: 12px;
+      background: rgba(2, 5, 8, .8);
+      filter: blur(22px);
+      opacity: .72;
+      transform: translate3d(18px, 28px, -60px);
+    }
+
+    .book-back {
+      z-index: 0;
+      background: var(--cover-color);
+      box-shadow: 0 18px 30px rgba(2, 5, 8, .5);
+      transform: translate3d(7px, 1px, -26px);
+    }
+
+    .page-block {
+      z-index: 1;
+      inset: 1.7% 1.4% 1.7% 3.8%;
+      overflow: visible;
+      border: 1px solid rgba(53, 208, 186, .18);
+      border-radius: 2px 5px 5px 2px;
+      background:
+        repeating-linear-gradient(
+          0deg,
+          rgba(53, 208, 186, .10) 0,
+          rgba(53, 208, 186, .10) 1px,
+          transparent 1px,
+          transparent 2.8px
+        ),
+        linear-gradient(90deg, #1b222b 0%, #232c38 14%, #1e2630 87%, #161c24 100%);
+      box-shadow: 7px 5px 16px rgba(2, 6, 10, .4);
+      transform: translate3d(7px, 1px, -12px);
+      transition: transform 1100ms var(--ease), inset 1100ms var(--ease);
+    }
+
+    .page-block::before {
+      content: "";
+      position: absolute;
+      top: -7px;
+      right: 1px;
+      left: 1px;
+      height: 8px;
+      border-radius: 2px 4px 0 0;
+      background:
+        repeating-linear-gradient(
+          90deg,
+          #1d2630 0,
+          #1d2630 2px,
+          #2a3542 2px,
+          #2a3542 5px
+        );
+      transform: skewX(-8deg);
+      transform-origin: bottom left;
+    }
+
+    .page-block::after {
+      content: "";
+      position: absolute;
+      top: 0;
+      right: -7px;
+      width: 8px;
+      height: 100%;
+      border-radius: 0 4px 4px 0;
+      background:
+        repeating-linear-gradient(
+          0deg,
+          #161c24 0,
+          #161c24 1px,
+          #232c38 1px,
+          #232c38 3px
+        );
+      box-shadow: 3px 2px 7px rgba(2, 6, 10, .3);
+      transform: skewY(-2deg);
+      transform-origin: left center;
+    }
+
+    .page-fan {
+      z-index: 2;
+      inset: 2.4% 2% 2.4% 4.3%;
+      pointer-events: none;
+      transform-style: preserve-3d;
+    }
+
+    .page-fan i {
+      position: absolute;
+      inset: 0;
+      display: block;
+      border: 1px solid rgba(53, 208, 186, .18);
+      border-radius: 2px 5px 5px 2px;
+      background:
+        linear-gradient(90deg, rgba(53, 208, 186, .18), transparent 9%),
+        repeating-linear-gradient(
+          0deg,
+          #1f2832 0,
+          #1f2832 2px,
+          #18202a 2px,
+          #18202a 3px
+        );
+      box-shadow: 3px 5px 10px rgba(2, 6, 10, .2);
+      opacity: 0;
+      transform: translate3d(0, 0, 0) rotateY(0);
+      transform-origin: 1.5% center;
+      transition: opacity 500ms ease, transform 1200ms var(--ease);
+    }
+
+    .front-cover {
+      z-index: 3;
+      overflow: hidden;
+      border: 1px solid rgba(230, 234, 240, .14);
+      background-color: var(--cover-color);
+      background-image:
+        radial-gradient(130% 80% at 50% -10%, rgba(53, 208, 186, .18), transparent 60%),
+        linear-gradient(180deg, rgba(255, 255, 255, .05), transparent 30%);
+      background-position: center;
+      background-size: cover;
+      box-shadow:
+        0 25px 38px rgba(2, 5, 8, .5),
+        inset -12px 0 18px rgba(0, 0, 0, .3),
+        inset 4px 0 9px rgba(255, 255, 255, .06);
+      transform: translate3d(0, 0, 12px);
+      transform-origin: 1.5% center;
+      transform-style: preserve-3d;
+      transition: transform 1200ms var(--ease), box-shadow 600ms ease;
+    }
+
+    .front-cover::before {
+      content: "";
+      position: absolute;
+      z-index: 3;
+      top: 0;
+      bottom: 0;
+      left: 0;
+      width: 5.5%;
+      background:
+        linear-gradient(
+          90deg,
+          rgba(0, 0, 0, .4),
+          rgba(255, 255, 255, .06) 35%,
+          rgba(0, 0, 0, .18) 75%,
+          transparent
+        );
+      mix-blend-mode: multiply;
+      opacity: .85;
+    }
+
+    .front-cover::after {
+      content: "";
+      position: absolute;
+      z-index: 4;
+      inset: 0;
+      border: 3px solid rgba(53, 208, 186, .06);
+      border-radius: inherit;
+      pointer-events: none;
+    }
+
+    .cover-copy {
+      position: absolute;
+      z-index: 2;
+      inset: 5.8% 7.5% 5.5%;
+      display: grid;
+      grid-template-rows: auto auto auto 1fr auto;
+      align-content: start;
+      color: var(--cover-ink);
+      text-align: center;
+    }
+
+    .cover-kicker {
+      font-family: var(--mono);
+      font-size: clamp(8px, .72vw, 11px);
+      font-weight: 600;
+      letter-spacing: .16em;
+      text-transform: uppercase;
+      color: var(--pink);
+    }
+
+    .cover-title {
+      margin-top: 2.2%;
+      font-size: clamp(35px, 4.3vw, 60px);
+      font-style: italic;
+      font-weight: 600;
+      letter-spacing: -.045em;
+      line-height: .9;
+    }
+
+    .cover-subtitle {
+      margin-top: 3%;
+      font-size: clamp(10px, 1.05vw, 15px);
+      font-style: italic;
+      font-weight: 600;
+      letter-spacing: .035em;
+      color: var(--muted);
+    }
+
+    .cover-footer {
+      align-self: end;
+      padding-top: 3%;
+      border-top: 1px solid currentColor;
+      font-family: var(--mono);
+      font-size: clamp(7px, .62vw, 9px);
+      font-weight: 700;
+      letter-spacing: .18em;
+      text-transform: uppercase;
+      opacity: .7;
+    }
+
+    .book-card .cover-copy { --cover-ink: #E6EAF0; }
+
+    .open-badge {
+      position: absolute;
+      z-index: 6;
+      top: 47%;
+      left: 50%;
+      display: grid;
+      width: 94px;
+      height: 66px;
+      place-items: center;
+      color: var(--ink);
+      background: var(--pink);
+      clip-path: polygon(
+        3% 22%, 10% 8%, 25% 7%, 38% 1%, 51% 6%, 66% 2%,
+        77% 10%, 92% 11%, 96% 26%, 100% 39%, 95% 52%, 99% 67%,
+        88% 79%, 83% 93%, 68% 94%, 55% 100%, 42% 94%, 27% 98%,
+        17% 88%, 4% 84%, 5% 69%, 0 57%, 5% 43%, 1% 34%
+      );
+      font-size: 11px;
+      font-style: italic;
+      font-weight: 700;
+      letter-spacing: .12em;
+      opacity: 0;
+      transform: translate(-50%, -50%) scale(.76) rotate(-3deg);
+      transition: opacity 260ms ease, transform 420ms var(--ease), filter 260ms ease;
+      pointer-events: none;
+    }
+
+    .book-card:hover .open-badge,
+    .book-card[data-hovered="true"] .open-badge,
+    .book-card:focus-visible .open-badge {
+      opacity: 1;
+      transform: translate(-50%, -50%) scale(1) rotate(-3deg);
+    }
+
+    .book-card:focus-visible {
+      outline: 0;
+    }
+
+    .book-card:focus-visible .open-badge {
+      filter:
+        drop-shadow(0 7px 12px rgba(2, 6, 10, .5))
+        drop-shadow(0 0 8px rgba(53, 208, 186, .5));
+    }
+
+    .detail-panel {
+      position: absolute;
+      z-index: 12;
+      top: 14.5%;
+      right: 4.5%;
+      width: min(47.5%, 650px);
+      opacity: 0;
+      transition: opacity 520ms ease 280ms;
+      pointer-events: none;
+    }
+
+    .detail-title {
+      margin: 0 0 24px;
+      color: var(--pink);
+      font-size: clamp(52px, 5.7vw, 82px);
+      font-style: italic;
+      font-weight: 500;
+      letter-spacing: -.055em;
+      line-height: .96;
+      text-shadow: 0 0 30px rgba(53, 208, 186, .22);
+    }
+
+    .detail-description {
+      max-width: 600px;
+      margin: 0;
+      color: var(--muted);
+      font-size: clamp(14px, 1.28vw, 17px);
+      line-height: 1.64;
+    }
+
+    .detail-scroll {
+      max-height: clamp(340px, calc(100svh - 450px), 600px);
+      overflow-y: auto;
+      overscroll-behavior: contain;
+      padding: 0 22px 76px 0;
+      -webkit-mask-image: linear-gradient(
+        to bottom,
+        #000 0,
+        #000 calc(100% - 76px),
+        transparent 100%
+      );
+      mask-image: linear-gradient(
+        to bottom,
+        #000 0,
+        #000 calc(100% - 76px),
+        transparent 100%
+      );
+      scrollbar-color: rgba(53, 208, 186, .76) rgba(40, 48, 58, .5);
+      scrollbar-width: thin;
+    }
+
+    .detail-scroll:focus-visible {
+      border-radius: 8px;
+      outline: 1px solid rgba(53, 208, 186, .6);
+      outline-offset: 8px;
+    }
+
+    .detail-scroll::-webkit-scrollbar {
+      width: 5px;
+    }
+
+    .detail-scroll::-webkit-scrollbar-track {
+      border-radius: 999px;
+      background: rgba(40, 48, 58, .5);
+    }
+
+    .detail-scroll::-webkit-scrollbar-thumb {
+      border-radius: 999px;
+      background: rgba(53, 208, 186, .76);
+    }
+
+    .doc-section {
+      margin-top: 26px;
+      padding-top: 22px;
+      border-top: 1px solid rgba(53, 208, 186, .16);
+    }
+
+    .doc-label {
+      margin: 0 0 16px;
+      color: var(--pink);
+      font-family: var(--mono);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: .16em;
+      text-transform: uppercase;
+    }
+
+    .doc-steps {
+      display: grid;
+      gap: 16px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+      counter-reset: guide-step;
+    }
+
+    .doc-steps li {
+      display: grid;
+      grid-template-columns: 34px 1fr;
+      gap: 12px;
+      counter-increment: guide-step;
+    }
+
+    .doc-steps li::before {
+      content: counter(guide-step, decimal-leading-zero);
+      padding-top: 2px;
+      color: rgba(53, 208, 186, .7);
+      font-family: var(--mono);
+      font-size: 12px;
+      letter-spacing: .08em;
+    }
+
+    .doc-step-copy {
+      display: grid;
+      gap: 4px;
+    }
+
+    .doc-step-copy strong {
+      color: var(--text);
+      font-size: 15px;
+      font-style: italic;
+      font-weight: 650;
+    }
+
+    .doc-step-copy span,
+    .doc-review {
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.58;
+    }
+
+    .prompt-block {
+      padding: 17px 18px;
+      border: 1px solid rgba(53, 208, 186, .2);
+      border-radius: 12px;
+      background: rgba(10, 14, 19, .7);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, .03);
+    }
+
+    .prompt-block code {
+      color: var(--pink-bright);
+      font-family: var(--mono);
+      font-size: 12px;
+      line-height: 1.58;
+      white-space: pre-wrap;
+    }
+
+    .doc-review {
+      margin: 0;
+    }
+
+    .meta-row {
+      display: grid;
+      grid-template-columns: max-content 1px max-content 1fr;
+      align-items: center;
+      gap: clamp(16px, 2vw, 27px);
+      margin-top: 22px;
+      color: var(--pink);
+    }
+
+    .stars {
+      display: flex;
+      gap: 8px;
+      font-size: 24px;
+      letter-spacing: .02em;
+      line-height: 1;
+    }
+
+    .stars .dim {
+      color: #4a5360;
+    }
+
+    .meta-divider {
+      width: 1px;
+      height: 26px;
+      background: rgba(53, 208, 186, .28);
+    }
+
+    .review-source,
+    .year {
+      color: var(--muted);
+      font-size: 18px;
+      font-style: italic;
+      font-weight: 650;
+    }
+
+    .year {
+      justify-self: end;
+    }
+
+    .detail-rule {
+      height: 1px;
+      margin: 10px 0 22px;
+      border: 0;
+      background: rgba(53, 208, 186, .24);
+    }
+
+    .bottom-dock {
+      position: fixed;
+      z-index: 24;
+      right: 4.5%;
+      bottom: 28px;
+      width: min(47.5%, 650px);
+    }
+
+    .bottom-dock .meta-row {
+      margin: 0 10px;
+    }
+
+    .bottom-dock .detail-rule {
+      margin: 10px 8px 14px;
+    }
+
+    .action-rail {
+      --action-inset: 8px;
+      display: flex;
+      align-items: center;
+      gap: var(--action-inset);
+      width: 100%;
+      padding: var(--action-inset);
+      border: 1px solid rgba(53, 208, 186, .14);
+      border-radius: 32px;
+      background: rgba(18, 22, 29, .9);
+      box-shadow: 0 16px 32px rgba(2, 6, 10, .4);
+      backdrop-filter: blur(12px);
+    }
+
+    .pill {
+      display: inline-flex;
+      flex: 1 1 0;
+      align-items: center;
+      justify-content: center;
+      min-width: 0;
+      min-height: 58px;
+      padding: 0 18px;
+      border-radius: 24px;
+      background: rgba(53, 208, 186, .14);
+      color: var(--text);
+      cursor: pointer;
+      font-size: 15px;
+      font-style: italic;
+      font-weight: 700;
+      white-space: nowrap;
+      transition: transform 220ms var(--ease), filter 220ms ease, background 220ms ease;
+    }
+
+    .pill:hover {
+      transform: translateY(-2px);
+      filter: brightness(1.12);
+    }
+
+    .pill.language {
+      gap: 10px;
+      background: var(--pink);
+      color: var(--ink);
+    }
+
+    .pill.language svg {
+      width: 19px;
+      height: 19px;
+    }
+
+    .pill.icon-only {
+      flex: 0 0 58px;
+      width: 58px;
+      min-width: 58px;
+      padding: 0;
+      background: rgba(53, 208, 186, .1);
+      color: var(--text);
+    }
+
+    .pill.icon-only svg {
+      width: 19px;
+      height: 19px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 1.8;
+      transition: fill 220ms ease;
+    }
+
+    .pill.icon-only[aria-pressed="true"] svg {
+      fill: var(--pink);
+      stroke: var(--pink);
+    }
+
+    .close-button {
+      position: absolute;
+      z-index: 52;
+      top: 30px;
+      left: 50%;
+      display: grid;
+      width: 54px;
+      height: 54px;
+      place-items: center;
+      border: 1px solid rgba(53, 208, 186, .3);
+      border-radius: 50%;
+      background: rgba(14, 17, 22, .4);
+      color: var(--text);
+      cursor: pointer;
+      font-size: 27px;
+      font-weight: 200;
+      opacity: 0;
+      transform: translate3d(-50%, -18px, 0) rotate(-45deg);
+      transition: opacity 400ms ease, transform 620ms var(--ease), background 220ms ease;
+      pointer-events: none;
+      backdrop-filter: blur(8px);
+    }
+
+    .close-button:hover {
+      background: rgba(53, 208, 186, .14);
+    }
+
+    .blossom-field {
+      position: absolute;
+      z-index: 9;
+      inset: 0;
+      overflow: hidden;
+      opacity: 0;
+      transition: opacity 700ms ease 250ms;
+      pointer-events: none;
+    }
+
+    .blossom {
+      --blossom-size: 10px;
+      position: absolute;
+      top: -12vh;
+      left: var(--blossom-x);
+      width: var(--blossom-size);
+      height: var(--blossom-size);
+      opacity: .9;
+      transform-style: preserve-3d;
+      animation: blossomFall var(--blossom-duration) linear var(--blossom-delay) infinite;
+    }
+
+    /* AETHER: the falling motes are small teal embers, not blossoms. */
+    .blossom i {
+      position: absolute;
+      inset: 0;
+      border-radius: 50%;
+      background: radial-gradient(circle at 50% 50%, #CFFFF2 0 24%, #35D0BA 55%, transparent 72%);
+      box-shadow: 0 0 10px rgba(53, 208, 186, .8);
+    }
+
+    .blossom::after {
+      content: none;
+    }
+
+    @keyframes blossomFall {
+      0% {
+        transform: translate3d(0, -10vh, 0) rotateZ(var(--blossom-r));
+      }
+      32% {
+        transform: translate3d(36px, 34vh, 0) rotateZ(calc(var(--blossom-r) + 126deg));
+      }
+      68% {
+        transform: translate3d(-30px, 78vh, 0) rotateZ(calc(var(--blossom-r) + 272deg));
+      }
+      100% {
+        transform: translate3d(20px, 122vh, 0) rotateZ(calc(var(--blossom-r) + 430deg));
+      }
+    }
+
+    .menu-layer {
+      position: fixed;
+      z-index: 40;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      background:
+        radial-gradient(circle at 50% 47%, rgba(53, 208, 186, .14), transparent 44%),
+        rgba(8, 10, 14, .95);
+      opacity: 0;
+      transition: opacity 460ms ease;
+      pointer-events: none;
+      backdrop-filter: blur(18px);
+    }
+
+    .menu-list {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .menu-link {
+      display: inline-block;
+      color: var(--pink);
+      font-size: clamp(56px, 7.5vw, 108px);
+      font-style: italic;
+      font-weight: 500;
+      letter-spacing: -.055em;
+      line-height: 1.05;
+      text-decoration: none;
+      transform: translateY(24px);
+      transition: color 200ms ease, transform 500ms var(--ease);
+    }
+
+    .menu-link:hover {
+      color: var(--text);
+    }
+
+    [data-menu="open"] .menu-layer {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    [data-menu="open"] .menu-link {
+      transform: translateY(0);
+    }
+
+    .toast {
+      position: fixed;
+      z-index: 80;
+      bottom: 22px;
+      left: 50%;
+      max-width: calc(100vw - 32px);
+      padding: 12px 18px;
+      border: 1px solid rgba(53, 208, 186, .2);
+      border-radius: 999px;
+      background: rgba(16, 20, 27, .9);
+      color: var(--text);
+      box-shadow: 0 12px 36px rgba(0, 0, 0, .3);
+      font-size: 13px;
+      font-weight: 650;
+      opacity: 0;
+      transform: translate(-50%, 20px);
+      transition: opacity 250ms ease, transform 350ms var(--ease);
+      pointer-events: none;
+      backdrop-filter: blur(12px);
+    }
+
+    .toast[data-show="true"] {
+      opacity: 1;
+      transform: translate(-50%, 0);
+    }
+
+    [data-mode="detail"] .hero-word {
+      opacity: 0;
+      filter: blur(16px);
+      transform: translate3d(-50%, -34px, 0) scale(.9);
+    }
+
+    [data-mode="detail"] .book-card:not(.selected) {
+      opacity: 0;
+      filter: blur(10px);
+      transform: translate3d(-50%, 60vh, -200px) rotate(var(--r)) scale(.8);
+      pointer-events: none;
+    }
+
+    [data-mode="detail"] .book-card.selected {
+      --hover-y: 0px;
+      --local-x: 0px;
+      --local-y: 0px;
+      --detail-yaw: -5deg;
+      --detail-pitch: 0deg;
+      left: 27%;
+      top: 50%;
+      width: min(30vw, 415px);
+      z-index: 14;
+      cursor: default;
+      transform: translate3d(-50%, -50%, 0) rotate(-3deg);
+      pointer-events: none;
+    }
+
+    [data-mode="detail"] .book-card.selected .book {
+      transform: scale(1.02) rotateX(var(--detail-pitch)) rotateY(var(--detail-yaw));
+      transition-duration: 170ms;
+      transition-timing-function: cubic-bezier(.2, .78, .2, 1);
+    }
+
+    [data-mode="detail"] .book-card.selected .front-cover {
+      box-shadow:
+        25px 26px 44px rgba(2, 6, 10, .5),
+        inset -12px 0 18px rgba(0, 0, 0, .25),
+        inset 4px 0 9px rgba(255, 255, 255, .06);
+      transform: translate3d(0, 0, 18px) rotateY(-29deg);
+    }
+
+    [data-mode="detail"] .book-card.selected .page-block {
+      inset: 1.9% 1.5% 1.9% 4.4%;
+      transform: translate3d(6px, 1px, -11px);
+    }
+
+    [data-mode="detail"] .book-card.selected .page-fan i {
+      opacity: 1;
+    }
+
+    [data-mode="detail"] .book-card.selected .page-fan i:nth-child(1) {
+      transform: translate3d(0, 0, 10px) rotateY(-4deg);
+    }
+
+    [data-mode="detail"] .book-card.selected .page-fan i:nth-child(2) {
+      transform: translate3d(0, 0, 11px) rotateY(-8deg);
+    }
+
+    [data-mode="detail"] .book-card.selected .page-fan i:nth-child(3) {
+      transform: translate3d(0, 0, 12px) rotateY(-12deg);
+    }
+
+    [data-mode="detail"] .book-card.selected .page-fan i:nth-child(4) {
+      transform: translate3d(0, 0, 13px) rotateY(-16deg);
+    }
+
+    [data-mode="detail"] .book-card.selected .open-badge {
+      opacity: 0;
+    }
+
+    [data-mode="detail"] .detail-panel {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    [data-mode="gallery"] .detail-panel {
+      transition-duration: 160ms;
+      transition-delay: 0ms;
+    }
+
+    [data-mode="detail"] .close-button {
+      opacity: 1;
+      transform: translate3d(-50%, 0, 0) rotate(0);
+      pointer-events: auto;
+    }
+
+    [data-mode="detail"] .blossom-field {
+      opacity: 1;
+    }
+
+    @media (max-width: 900px) {
+      body {
+        overflow: auto;
+      }
+
+      .stage {
+        min-height: 100svh;
+        overflow: hidden;
+      }
+
+      .topbar {
+        padding: 20px;
+      }
+
+      .icon-button,
+      .ticket-button {
+        height: 44px;
+      }
+
+      .icon-button {
+        width: 44px;
+      }
+
+      .ticket-button {
+        min-width: auto;
+        padding: 0 18px;
+      }
+
+      .hero-word {
+        top: 17vh;
+        font-size: clamp(128px, 28vw, 230px);
+      }
+
+      .book-card[data-book="labmode"] {
+        --x: 14%;
+        --y: 41%;
+        --w: min(49vw, 360px);
+      }
+
+      .book-card[data-book="labs"] {
+        --x: 50%;
+        --y: 35%;
+        --w: min(54vw, 395px);
+      }
+
+      .book-card[data-book="hardened"] {
+        --x: 87%;
+        --y: 42%;
+        --w: min(49vw, 360px);
+      }
+
+      [data-mode="detail"] .stage {
+        min-height: calc(100svh + 760px);
+        overflow-y: auto;
+      }
+
+      [data-mode="detail"] .book-card.selected {
+        left: 50%;
+        top: 50svh;
+        width: min(58vw, 340px);
+      }
+
+      .detail-panel {
+        top: calc(100svh + 48px);
+        right: 7%;
+        left: 7%;
+        width: auto;
+        padding-bottom: 130px;
+      }
+
+      .detail-scroll {
+        max-height: min(500px, calc(100svh - 310px));
+      }
+
+      .detail-title {
+        font-size: clamp(48px, 10vw, 70px);
+      }
+
+      .bottom-dock {
+        right: 20px;
+        bottom: 20px;
+        left: 20px;
+        width: auto;
+      }
+
+      .action-rail {
+        overflow-x: auto;
+        scrollbar-width: none;
+      }
+
+      .action-rail::-webkit-scrollbar {
+        display: none;
+      }
+
+      .pill {
+        min-width: 132px;
+      }
+
+      .pill.icon-only {
+        min-width: 58px;
+      }
+    }
+
+    @media (max-width: 560px) {
+      .brand {
+        font-size: 20px;
+      }
+
+      .ticket-button {
+        display: none;
+      }
+
+      .hero-word {
+        top: 22vh;
+        font-size: 38vw;
+      }
+
+      .book-card[data-book="labmode"] {
+        --x: 4%;
+        --y: 45%;
+        --w: 66vw;
+      }
+
+      .book-card[data-book="labs"] {
+        --x: 50%;
+        --y: 40%;
+        --w: 72vw;
+      }
+
+      .book-card[data-book="hardened"] {
+        --x: 96%;
+        --y: 46%;
+        --w: 66vw;
+      }
+
+      [data-mode="detail"] .stage {
+        min-height: calc(100svh + 760px);
+      }
+
+      [data-mode="detail"] .book-card.selected {
+        width: min(67vw, 315px);
+      }
+
+      .detail-panel {
+        right: 20px;
+        left: 20px;
+      }
+
+      .detail-scroll {
+        padding-right: 14px;
+      }
+
+      .pill {
+        min-width: 0;
+        min-height: 54px;
+        padding: 0 10px;
+        font-size: 12px;
+      }
+
+      .pill.language svg {
+        display: none;
+      }
+
+      .pill.icon-only {
+        flex-basis: 54px;
+        width: 54px;
+        min-width: 54px;
+      }
+
+      .meta-row {
+        grid-template-columns: max-content 1px 1fr;
+      }
+
+      .year {
+        display: none;
+      }
+
+      .close-button {
+        top: 18px;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *,
+      *::before,
+      *::after {
+        scroll-behavior: auto !important;
+        animation-duration: .001ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: .001ms !important;
+        transition-delay: 0ms !important;
+      }
+    }
+  </style>
+</head>
+<body data-mode="gallery" data-menu="closed">
+  <main class="stage" aria-label="AETHER OS field manuals">
+    <header class="topbar">
+      <a class="brand" href="#" aria-label="AETHER OS home">
+        <span class="mark" aria-hidden="true">Æ</span>
+        <span>AETHER <span class="brand-os">OS</span></span>
+      </a>
+      <div class="nav-actions">
+        <button class="icon-button" id="menuButton" type="button" aria-label="Open menu" aria-expanded="false">
+          <span class="menu-glyph" aria-hidden="true"></span>
+        </button>
+        <a class="ticket-button" href="https://github.com/evanchoudhury/aether-os" target="_blank" rel="noopener">Get AETHER</a>
+      </div>
+    </header>
+
+    <h1 class="hero-word" aria-hidden="true">AETHER</h1>
+
+    <section class="gallery" aria-label="AETHER OS field manuals">
+      <button
+        class="book-card"
+        type="button"
+        data-book="labmode"
+        aria-label="Open Lab Mode details"
+        style="--cover-color: #12202a;"
+      >
+        <span class="book" aria-hidden="true">
+          <span class="book-shadow"></span>
+          <span class="book-back"></span>
+          <span class="page-block"></span>
+          <span class="page-fan"><i></i><i></i><i></i><i></i></span>
+          <span class="front-cover">
+            <span class="cover-copy">
+              <span class="cover-kicker">Field Manual · I</span>
+              <span class="cover-title">Lab Mode</span>
+              <span class="cover-subtitle">Arm the box</span>
+              <span></span>
+              <span class="cover-footer">Tor · VPN · Kill-switch</span>
+            </span>
+          </span>
+          <span class="open-badge">Read</span>
+        </span>
+      </button>
+
+      <button
+        class="book-card"
+        type="button"
+        data-book="labs"
+        aria-label="Open Guided Labs details"
+        style="--cover-color: #1a1530;"
+      >
+        <span class="book" aria-hidden="true">
+          <span class="book-shadow"></span>
+          <span class="book-back"></span>
+          <span class="page-block"></span>
+          <span class="page-fan"><i></i><i></i><i></i><i></i></span>
+          <span class="front-cover">
+            <span class="cover-copy">
+              <span class="cover-kicker">Field Manual · II</span>
+              <span class="cover-title">Guided<br>Labs</span>
+              <span class="cover-subtitle">Learn by doing</span>
+              <span></span>
+              <span class="cover-footer">Assistant · Labs · Scope</span>
+            </span>
+          </span>
+          <span class="open-badge">Read</span>
+        </span>
+      </button>
+
+      <button
+        class="book-card"
+        type="button"
+        data-book="hardened"
+        aria-label="Open Hardened details"
+        style="--cover-color: #14181f;"
+      >
+        <span class="book" aria-hidden="true">
+          <span class="book-shadow"></span>
+          <span class="book-back"></span>
+          <span class="page-block"></span>
+          <span class="page-fan"><i></i><i></i><i></i><i></i></span>
+          <span class="front-cover">
+            <span class="cover-copy">
+              <span class="cover-kicker">Field Manual · III</span>
+              <span class="cover-title">Hardened</span>
+              <span class="cover-subtitle">Secure by default</span>
+              <span></span>
+              <span class="cover-footer">No bloat · No root GUI</span>
+            </span>
+          </span>
+          <span class="open-badge">Read</span>
+        </span>
+      </button>
+    </section>
+
+    <section class="detail-panel" id="detailPanel" aria-live="polite" aria-hidden="true" inert>
+      <h2 class="detail-title" id="detailTitle">Lab Mode</h2>
+      <div class="detail-scroll" id="detailScroll" tabindex="0" aria-label="Field manual">
+        <p class="detail-description" id="detailDescription"></p>
+        <section class="doc-section" aria-labelledby="gettingStartedLabel">
+          <p class="doc-label" id="gettingStartedLabel">Getting started</p>
+          <ol class="doc-steps" id="detailSteps"></ol>
+        </section>
+        <section class="doc-section" aria-labelledby="firstPromptLabel">
+          <p class="doc-label" id="firstPromptLabel">On the box</p>
+          <div class="prompt-block"><code id="detailPrompt"></code></div>
+        </section>
+        <section class="doc-section" aria-labelledby="reviewLabel">
+          <p class="doc-label" id="reviewLabel">Good to know</p>
+          <p class="doc-review" id="detailReview"></p>
+        </section>
+      </div>
+      <div class="bottom-dock">
+        <div class="meta-row" aria-label="Edition and year">
+          <div class="stars" aria-label="Edition">
+            <span>✦</span><span>✦</span><span>✦</span><span>✦</span><span class="dim">◇</span>
+          </div>
+          <span class="meta-divider" aria-hidden="true"></span>
+          <span class="review-source">AETHER OS</span>
+          <span class="year" id="detailYear">v0.2</span>
+        </div>
+        <hr class="detail-rule">
+        <div class="action-rail" aria-label="Manual actions">
+          <a class="pill language" href="https://github.com/evanchoudhury/aether-os" target="_blank" rel="noopener">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path fill="currentColor" d="M12 2a10 10 0 0 0-3.16 19.49c.5.09.68-.22.68-.48l-.01-1.7c-2.78.6-3.37-1.34-3.37-1.34-.46-1.16-1.11-1.47-1.11-1.47-.9-.62.07-.6.07-.6 1 .07 1.53 1.03 1.53 1.03.9 1.52 2.34 1.08 2.91.83.09-.65.35-1.08.63-1.33-2.22-.25-4.56-1.11-4.56-4.95 0-1.09.39-1.99 1.03-2.69-.1-.25-.45-1.27.1-2.65 0 0 .84-.27 2.75 1.03a9.6 9.6 0 0 1 5 0c1.91-1.3 2.75-1.03 2.75-1.03.55 1.38.2 2.4.1 2.65.64.7 1.03 1.6 1.03 2.69 0 3.85-2.34 4.7-4.57 4.95.36.31.68.92.68 1.86l-.01 2.75c0 .27.18.58.69.48A10 10 0 0 0 12 2Z"/>
+            </svg>
+            View on GitHub
+          </a>
+          <button class="pill" type="button" data-toast="Flash the .img.xz with Raspberry Pi Imager.">Flash a Pi</button>
+          <button class="pill" type="button" data-toast="Open source, GPL. Build it yourself.">Read Docs</button>
+          <button class="pill icon-only" id="saveButton" type="button" aria-label="Star this manual" aria-pressed="false">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M12 3.3l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 17.9 6.8 20.5l1-5.8L3.5 10.5l5.9-.9L12 3.3Z"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <button class="close-button" id="closeButton" type="button" aria-label="Close detail view" tabindex="-1">×</button>
+
+    <div class="blossom-field" aria-hidden="true">
+      <span class="blossom" style="--blossom-x: 4%; --blossom-size: 11px; --blossom-r: 18deg; --blossom-duration: 10s; --blossom-delay: -4s;"><i></i></span>
+      <span class="blossom" style="--blossom-x: 16%; --blossom-size: 7px; --blossom-r: 74deg; --blossom-duration: 8.5s; --blossom-delay: -1s;"><i></i></span>
+      <span class="blossom" style="--blossom-x: 31%; --blossom-size: 9px; --blossom-r: -20deg; --blossom-duration: 11s; --blossom-delay: -7s;"><i></i></span>
+      <span class="blossom" style="--blossom-x: 44%; --blossom-size: 6px; --blossom-r: 48deg; --blossom-duration: 9.5s; --blossom-delay: -5s;"><i></i></span>
+      <span class="blossom" style="--blossom-x: 58%; --blossom-size: 10px; --blossom-r: 12deg; --blossom-duration: 12s; --blossom-delay: -8s;"><i></i></span>
+      <span class="blossom" style="--blossom-x: 69%; --blossom-size: 7px; --blossom-r: 92deg; --blossom-duration: 9s; --blossom-delay: -3s;"><i></i></span>
+      <span class="blossom" style="--blossom-x: 79%; --blossom-size: 12px; --blossom-r: 32deg; --blossom-duration: 11.5s; --blossom-delay: -6s;"><i></i></span>
+      <span class="blossom" style="--blossom-x: 89%; --blossom-size: 8px; --blossom-r: -14deg; --blossom-duration: 10.5s; --blossom-delay: -9s;"><i></i></span>
+      <span class="blossom" style="--blossom-x: 96%; --blossom-size: 6px; --blossom-r: 56deg; --blossom-duration: 8s; --blossom-delay: -2s;"><i></i></span>
+    </div>
+
+    <nav class="menu-layer" id="menuLayer" aria-label="Site menu" inert>
+      <ul class="menu-list">
+        <li><a class="menu-link" href="#" data-menu-close>Manuals</a></li>
+        <li><a class="menu-link" href="https://github.com/evanchoudhury/aether-os" target="_blank" rel="noopener">Source</a></li>
+        <li><a class="menu-link" href="#" data-menu-close data-toast="A macOS-grade desktop, hardened for the Pi 4.">About</a></li>
+      </ul>
+    </nav>
+  </main>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script>
+    (() => {
+      const books = {
+        labmode: {
+          title: "Lab Mode",
+          year: "v0.2",
+          description:
+            "One switch arms AETHER. ARMED routes every connection over Tor behind a VPN kill-switch, so nothing leaks; SAFE is ordinary internet. Flip it before research, flip it back when you're done.",
+          steps: [
+            {
+              title: "Flip the switch",
+              body: "Hit Lab Mode in the top bar, or run aether-labmode arm from any terminal."
+            },
+            {
+              title: "Wait for the circuit",
+              body: "AETHER brings up Tor and loads the nftables kill-switch before it ever reports ARMED."
+            },
+            {
+              title: "Browse anonymously",
+              body: "Open the Anonymous Browser for normal and .onion sites, all over Tor."
+            },
+            {
+              title: "Disarm when done",
+              body: "SAFE tears down Tor and the kill-switch and restores your normal network."
+            }
+          ],
+          prompt:
+            "aether-labmode arm      # Tor + VPN kill-switch\naether-labmode status   # SAFE or ARMED\naether-labmode disarm   # back to everyday internet",
+          review:
+            "Strong anonymity is not the same as untraceable. The kill-switch is enforced on real Pi hardware, where there's a real network to drop."
+        },
+        labs: {
+          title: "Guided Labs",
+          year: "v0.2",
+          description:
+            "AETHER teaches the tools. A curated Assistant explains each one in plain language, Guided Labs hand you a safe, legal target to practice on, and Engagement Scope keeps every command inside the lines.",
+          steps: [
+            {
+              title: "Ask the Assistant",
+              body: "Type 'scan a network' and get the right tool, a safe starter command, and a warning."
+            },
+            {
+              title: "Start a lab",
+              body: "Spin up the localhost-only practice target and follow the recon → login → SQLi walkthrough."
+            },
+            {
+              title: "Set your scope",
+              body: "List the targets you're authorized to test; the guard refuses anything else before it runs."
+            },
+            {
+              title: "Capture & report",
+              body: "Press Print to screenshot and log a finding, then compile a shareable report when you're done."
+            }
+          ],
+          prompt:
+            "nmap -sV -p 8080 127.0.0.1          # the practice target\naether-scope guard nmap 10.0.0.5   # refused if out of scope",
+          review:
+            "Only test systems you own or are authorized to test. The labs run entirely on your own machine, against a target seeded with fake data."
+        },
+        hardened: {
+          title: "Hardened",
+          year: "v0.2",
+          description:
+            "AETHER is a macOS-grade desktop with a security spine. No default credentials, SSH off at boot, privileged actions through fixed argument-free scripts, and zero bloatware — you add vetted tools only when you need them.",
+          steps: [
+            {
+              title: "Boot clean",
+              body: "No default passwords, SSH disabled, firewall ready. Nothing is listening that you didn't ask for."
+            },
+            {
+              title: "Add only what you need",
+              body: "Browse the Tool Store and install vetted extra tools on demand — the image stays lean."
+            },
+            {
+              title: "Stay in the model",
+              body: "Privileged actions go through pkexec on fixed scripts. Never a GUI running as root."
+            },
+            {
+              title: "Make it yours",
+              body: "A full macOS-style desktop: Control Center, Notification Center, Night Light, and global search."
+            }
+          ],
+          prompt:
+            "# ship lean, add on demand\naether-store      # vetted tools, installed only when you want them\naether-report     # compile findings into one shareable page",
+          review:
+            "Built for the Raspberry Pi 4 (BCM2711, ARM64). Open source under the GPL — github.com/evanchoudhury/aether-os."
+        }
+      };
+
+      const body = document.body;
+      const stage = document.querySelector(".stage");
+      const cards = [...document.querySelectorAll(".book-card")];
+      const detailPanel = document.querySelector("#detailPanel");
+      const detailTitle = document.querySelector("#detailTitle");
+      const detailScroll = document.querySelector("#detailScroll");
+      const detailDescription = document.querySelector("#detailDescription");
+      const detailSteps = document.querySelector("#detailSteps");
+      const detailPrompt = document.querySelector("#detailPrompt");
+      const detailReview = document.querySelector("#detailReview");
+      const detailYear = document.querySelector("#detailYear");
+      const closeButton = document.querySelector("#closeButton");
+      const menuButton = document.querySelector("#menuButton");
+      const menuLayer = document.querySelector("#menuLayer");
+      const saveButton = document.querySelector("#saveButton");
+      const toast = document.querySelector("#toast");
+      const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+      let selectedCard = null;
+      let toastTimer = 0;
+      let frame = 0;
+      let pointerX = 0;
+      let pointerY = 0;
+      let pointerClientX = -10000;
+      let pointerClientY = -10000;
+
+      function showToast(message) {
+        window.clearTimeout(toastTimer);
+        toast.textContent = message;
+        toast.dataset.show = "true";
+        toastTimer = window.setTimeout(() => {
+          toast.dataset.show = "false";
+        }, 1800);
+      }
+
+      function updateParallax() {
+        frame = 0;
+        if (reducedMotion.matches) return;
+
+        if (body.dataset.mode === "detail" && selectedCard) {
+          const bounds = selectedCard.getBoundingClientRect();
+          const bookCenterX = bounds.left + bounds.width / 2;
+          const bookCenterY = bounds.top + bounds.height / 2;
+          const isPointerInViewport =
+            pointerClientX >= 0 &&
+            pointerClientX <= window.innerWidth &&
+            pointerClientY >= 0 &&
+            pointerClientY <= window.innerHeight;
+          const horizontalReach = pointerClientX < bookCenterX
+            ? Math.max(bookCenterX, 1)
+            : Math.max(window.innerWidth - bookCenterX, 1);
+          const verticalReach = pointerClientY < bookCenterY
+            ? Math.max(bookCenterY, 1)
+            : Math.max(window.innerHeight - bookCenterY, 1);
+          const viewportX = isPointerInViewport
+            ? Math.max(-1, Math.min(1, (pointerClientX - bookCenterX) / horizontalReach))
+            : -5 / 16;
+          const viewportY = isPointerInViewport
+            ? Math.max(-1, Math.min(1, (pointerClientY - bookCenterY) / verticalReach))
+            : 0;
+          selectedCard.style.setProperty("--detail-yaw", `${viewportX * 16}deg`);
+          selectedCard.style.setProperty("--detail-pitch", `${viewportY * -10}deg`);
+          selectedCard.dataset.orbiting = String(isPointerInViewport);
+          return;
+        }
+
+        if (body.dataset.mode !== "gallery") return;
+
+        document.documentElement.style.setProperty("--mx", `${pointerX * 11}px`);
+        document.documentElement.style.setProperty("--my", `${pointerY * 8}px`);
+
+        cards.forEach((card, index) => {
+          const depth = index === 1 ? 1 : .58;
+          card.style.setProperty("--local-x", `${pointerX * 15 * depth}px`);
+          card.style.setProperty("--local-y", `${pointerY * 9 * depth}px`);
+        });
+      }
+
+      function selectBook(card) {
+        if (body.dataset.mode === "detail") return;
+        const data = books[card.dataset.book];
+        if (!data) return;
+
+        selectedCard = card;
+        selectedCard.style.setProperty("--detail-yaw", "-5deg");
+        selectedCard.style.setProperty("--detail-pitch", "0deg");
+        selectedCard.dataset.orbiting = "false";
+        detailTitle.textContent = data.title;
+        detailDescription.textContent = data.description;
+        detailSteps.replaceChildren(...data.steps.map((step) => {
+          const item = document.createElement("li");
+          const copy = document.createElement("span");
+          const title = document.createElement("strong");
+          const bodyCopy = document.createElement("span");
+          copy.className = "doc-step-copy";
+          title.textContent = step.title;
+          bodyCopy.textContent = step.body;
+          copy.append(title, bodyCopy);
+          item.append(copy);
+          return item;
+        }));
+        detailPrompt.textContent = data.prompt;
+        detailReview.textContent = data.review;
+        detailScroll.scrollTop = 0;
+        detailYear.textContent = data.year;
+        cards.forEach((item) => item.classList.toggle("selected", item === card));
+        cards.forEach((item) => { item.tabIndex = -1; });
+        body.dataset.mode = "detail";
+        detailPanel.setAttribute("aria-hidden", "false");
+        detailPanel.inert = false;
+        closeButton.tabIndex = 0;
+        saveButton.setAttribute("aria-pressed", "false");
+        window.setTimeout(() => {
+          closeButton.focus({ preventScroll: true });
+          if (window.innerWidth > 900) stage.scrollTop = 0;
+        }, reducedMotion.matches ? 0 : 700);
+      }
+
+      function closeDetail() {
+        if (body.dataset.mode !== "detail") return;
+        body.dataset.mode = "gallery";
+        detailPanel.setAttribute("aria-hidden", "true");
+        detailPanel.inert = true;
+        closeButton.tabIndex = -1;
+        const lastCard = selectedCard;
+        lastCard?.style.setProperty("--detail-yaw", "-5deg");
+        lastCard?.style.setProperty("--detail-pitch", "0deg");
+        if (lastCard) lastCard.dataset.orbiting = "false";
+        window.setTimeout(() => {
+          cards.forEach((card) => card.classList.remove("selected"));
+          cards.forEach((card) => { card.tabIndex = 0; });
+          selectedCard = null;
+          lastCard?.focus({ preventScroll: true });
+          if (window.innerWidth > 900) stage.scrollTop = 0;
+        }, reducedMotion.matches ? 0 : 700);
+      }
+
+      function toggleMenu(force) {
+        const willOpen = typeof force === "boolean"
+          ? force
+          : body.dataset.menu !== "open";
+        body.dataset.menu = willOpen ? "open" : "closed";
+        menuLayer.inert = !willOpen;
+        menuButton.setAttribute("aria-expanded", String(willOpen));
+        menuButton.setAttribute("aria-label", willOpen ? "Close menu" : "Open menu");
+      }
+
+      cards.forEach((card) => {
+        card.addEventListener("click", () => selectBook(card));
+        card.addEventListener("pointerenter", () => card.dataset.hovered = "true");
+        card.addEventListener("pointerleave", () => card.dataset.hovered = "false");
+      });
+
+      window.addEventListener("pointermove", (event) => {
+        pointerX = event.clientX / window.innerWidth - .5;
+        pointerY = event.clientY / window.innerHeight - .5;
+        pointerClientX = event.clientX;
+        pointerClientY = event.clientY;
+        if (!frame) frame = window.requestAnimationFrame(updateParallax);
+      }, { passive: true });
+
+      window.addEventListener("pointerleave", () => {
+        pointerX = 0;
+        pointerY = 0;
+        pointerClientX = -10000;
+        pointerClientY = -10000;
+        if (!frame) frame = window.requestAnimationFrame(updateParallax);
+      });
+
+      closeButton.addEventListener("click", closeDetail);
+      menuButton.addEventListener("click", () => toggleMenu());
+
+      saveButton.addEventListener("click", () => {
+        const saved = saveButton.getAttribute("aria-pressed") !== "true";
+        saveButton.setAttribute("aria-pressed", String(saved));
+        showToast(saved ? "Starred. Now go star the repo too." : "Unstarred.");
+      });
+
+      document.addEventListener("click", (event) => {
+        const toastTarget = event.target.closest("[data-toast]");
+        if (toastTarget) {
+          event.preventDefault();
+          showToast(toastTarget.dataset.toast);
+        }
+
+        if (event.target.closest("[data-menu-close]")) {
+          toggleMenu(false);
+        }
+      });
+
+      document.addEventListener("keydown", (event) => {
+        if (event.key === "Escape") {
+          if (body.dataset.menu === "open") {
+            toggleMenu(false);
+          } else {
+            closeDetail();
+          }
+        }
+      });
+    })();
+  </script>
+</body>
+</html>
