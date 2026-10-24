@@ -14,7 +14,9 @@ INITQ=" ".join(__import__("sys").argv[1:])
 
 CSS="""
 window { background: rgba(14,17,22,0.93); border-radius: 18px; }
-.as-root { padding: 16px; }
+headerbar{background:transparent;box-shadow:none;border:none;min-height:40px;}
+headerbar windowtitle{color:#E6EAF0;font-weight:700;}
+.as-root { padding: 8px 16px 16px 16px; }
 .as-title { font-weight:800; font-size:18px; color:#E6EAF0; }
 .as-sub { color:#9AA4B2; font-size:12px; margin-bottom:4px; }
 .as-entry { background: rgba(255,255,255,0.08); border-radius:13px; padding:10px 14px;
@@ -62,9 +64,11 @@ class Assistant(Adw.Application):
     def do_activate(s):
         p=Gtk.CssProvider(); p.load_from_data(CSS.encode())
         Gtk.StyleContext.add_provider_for_display(Gdk.Display.get_default(),p,Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION)
+        Adw.StyleManager.get_default().set_color_scheme(Adw.ColorScheme.FORCE_DARK)
+        Gtk.Settings.get_default().props.gtk_decoration_layout=":minimize,maximize,close"
         w=Adw.ApplicationWindow(application=s, title="AETHER Assistant",
                                 default_width=560, default_height=640)
-        w.set_resizable(False); s.win=w
+        w.set_resizable(True); s.win=w
         root=Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10); root.add_css_class("as-root")
         t=Gtk.Label(label="Assistant", xalign=0); t.add_css_class("as-title"); root.append(t)
         sub=Gtk.Label(label="Ask about a tool or a task — answers are offline and curated.", xalign=0)
@@ -77,7 +81,11 @@ class Assistant(Adw.Application):
         sc=Gtk.ScrolledWindow(vexpand=True); sc.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
         s.body=Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
         sc.set_child(s.body); root.append(sc)
-        w.set_content(root)
+        hb=Adw.HeaderBar(); hb.add_css_class("flat")
+        hb.set_title_widget(Adw.WindowTitle(title="Assistant", subtitle=""))
+        root.set_vexpand(True)
+        outer=Gtk.Box(orientation=Gtk.Orientation.VERTICAL); outer.append(hb); outer.append(root)
+        w.set_content(outer)
         k=Gtk.EventControllerKey()
         k.connect("key-pressed", lambda c,kv,kc,st:(s.quit() or True) if kv==Gdk.KEY_Escape else False)
         w.add_controller(k)
