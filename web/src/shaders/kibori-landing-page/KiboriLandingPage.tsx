@@ -29,7 +29,7 @@ export function KiboriLandingPage({ className = "", style }: KiboriLandingPagePr
   return (
     <div ref={hostRef} className={`threeui-background kibori-landing-page${className ? ` ${className}` : ""}`} role="group" aria-label="Interactive Kibori landing page" data-state={!mounted ? "paused" : ready ? "ready" : "loading"} style={{ position: "relative", overflow: "hidden", background: "#0a0806", pointerEvents: "auto", ...style }}>
       {mounted ? (
-        <iframe title="Kibori" src="/landing-pages/kibori.html" sandbox="allow-scripts" loading="eager" onLoad={() => setReady(true)} style={{ position: "absolute", inset: 0, display: "block", width: "100%", height: "100%", border: 0, background: "#0a0806", opacity: ready ? 1 : 0, pointerEvents: ready ? "auto" : "none", transition: "opacity 240ms ease-out" }} />
+        <iframe title="Kibori" src="/landing-pages/kibori.html" sandbox="allow-scripts allow-popups allow-popups-to-escape-sandbox" loading="eager" onLoad={() => setReady(true)} style={{ position: "absolute", inset: 0, display: "block", width: "100%", height: "100%", border: 0, background: "#0a0806", opacity: ready ? 1 : 0, pointerEvents: ready ? "auto" : "none", transition: "opacity 240ms ease-out" }} />
       ) : null}
     </div>
   );
