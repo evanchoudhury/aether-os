@@ -1,0 +1,8 @@
+[Plymouth Theme]
+Name=AETHER
+Description=AETHER OS boot splash (centered logo on near-black, gentle pulse)
+ModuleName=script
+
+[script]
+ImageDir=/usr/share/plymouth/themes/aether
+ScriptFile=/usr/share/plymouth/themes/aether/aether.script

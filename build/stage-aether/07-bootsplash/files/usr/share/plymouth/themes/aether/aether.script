@@ -1,0 +1,35 @@
+# AETHER OS boot splash (Plymouth script module). [STATUS: UNTESTED on hardware]
+# Near-black AETHER background + centered logo that fades in, then breathes, so
+# the user sees the AETHER mark during boot instead of the rainbow + kernel text.
+
+# Background: AETHER near-black (#0E1116 top -> #0A0D12 bottom), floats are 0..1.
+Window.SetBackgroundTopColor(0.0549, 0.0667, 0.0863);
+Window.SetBackgroundBottomColor(0.0392, 0.0510, 0.0706);
+
+# Centered logo.
+logo.image  = Image("logo.png");
+logo.sprite = Sprite(logo.image);
+logo.sprite.SetX(Window.GetWidth()  / 2 - logo.image.GetWidth()  / 2);
+logo.sprite.SetY(Window.GetHeight() / 2 - logo.image.GetHeight() / 2);
+logo.sprite.SetOpacity(0);
+
+# Refresh runs ~50x/sec: fade in over ~1s, then a gentle breathing pulse that
+# signals "still working" (like a boot spinner).
+tick = 0;
+fun refresh_callback() {
+    tick++;
+    if (tick < 50) {
+        logo.sprite.SetOpacity(tick / 50);
+    } else {
+        logo.sprite.SetOpacity(0.80 + 0.20 * Math.Sin((tick - 50) / 16));
+    }
+}
+Plymouth.SetRefreshFunction(refresh_callback);
+
+# Keep it clean: swallow boot status messages (quiet splash).
+fun message_callback(text) { }
+Plymouth.SetMessageFunction(message_callback);
+
+# If a password is ever requested (not used by default; here for completeness).
+fun display_password_callback(prompt, bullets) { }
+Plymouth.SetDisplayPasswordFunction(display_password_callback);

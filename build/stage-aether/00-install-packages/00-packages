@@ -54,6 +54,9 @@ wlsunset
 # system monitoring + hardware
 lm-sensors
 i2c-tools
+# boot splash (AETHER logo at boot, via Plymouth — see 07-bootsplash)
+plymouth
+plymouth-themes
 # backup / recovery
 timeshift
 # AirDrop-style sharing: curl fetches the LocalSend .deb at build time (06-airdrop)
